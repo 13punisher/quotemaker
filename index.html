@@ -8,126 +8,63 @@
   <script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
   <style>
-    body {
-      margin: 0;
-      font-family: sans-serif;
-      background: #ffffff;
-      color: #000000;
-    }
-    .app {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 12px;
-      padding-bottom: 220px;
-    }
+    body { margin: 0; font-family: sans-serif; background: #fff; color: #000; }
+    .app { display: flex; flex-direction: column; align-items: center; padding: 12px; padding-bottom: 220px; }
     .image-canvas {
       aspect-ratio: 9 / 16;
-      width: 100%;
-      max-width: 480px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      background: #000;
-      position: relative;
-      border-radius: 12px;
-      overflow: hidden;
+      width: 100%; max-width: 480px;
+      display: flex; justify-content: center; align-items: center;
+      text-align: center; background: #000;
+      position: relative; overflow: hidden;
+      /* no rounded corners for sharp edges */
     }
-    .editable-text {
-      max-width: 85%;
-      word-wrap: break-word;
-      white-space: pre-wrap;
-    }
+    .editable-text { max-width: 85%; word-wrap: break-word; white-space: pre-wrap; }
     .bottom-spacer { height: 32px; }
 
     .download-btn, .download-menu button, .plus-btn {
-      background: #10a37f;
-      color: white;
-      padding: 10px 16px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 15px;
-      transition: background 0.3s ease;
+      background: #10a37f; color: #fff; padding: 10px 16px;
+      border: none; border-radius: 8px; cursor: pointer;
+      font-size: 15px; transition: background 0.3s ease;
     }
-    .download-btn:hover,
-    .download-menu button:hover,
-    .plus-btn:hover { background: #0d8c6b; }
+    .download-btn:hover, .download-menu button:hover, .plus-btn:hover { background: #0d8c6b; }
     .plus-btn {
-      border-radius: 50%;
-      width: 40px; height: 40px;
-      font-size: 20px;
-      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 50%; width: 40px; height: 40px;
+      font-size: 20px; display: inline-flex; align-items: center; justify-content: center;
       background: #313233;
     }
 
     .chat-input-bar {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      background: #202123;
-      padding: 10px 12px;
-      border-top: 1px solid #444;
-      gap: 10px;
-      z-index: 100;
-      box-sizing: border-box;
-      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.25);
+      position: fixed; bottom: 0; left: 0; right: 0;
+      display: flex; align-items: flex-end; justify-content: space-between;
+      background: #202123; padding: 10px 12px; border-top: 1px solid #444;
+      gap: 10px; z-index: 100; box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.25);
     }
     .chat-textarea {
-      flex: 1;
-      max-height: 120px;
-      min-height: 40px;
-      resize: none;
-      background: #2d2d2d;
-      color: #fff;
-      border: none;
-      border-radius: 16px;
-      padding: 10px 14px;
-      font-size: 15px;
-      outline: none;
+      flex: 1; max-height: 120px; min-height: 40px;
+      resize: none; background: #2d2d2d; color: #fff;
+      border: none; border-radius: 16px; padding: 10px 14px; font-size: 15px; outline: none;
     }
 
     .popup-dialog, .download-menu {
-      position: absolute;
-      bottom: 60px;
-      background: #2a2b2d;
-      border-radius: 8px;
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      color: white;
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
-      z-index: 2000;
+      position: absolute; bottom: 60px;
+      background: #2a2b2d; border-radius: 8px; padding: 10px;
+      display: flex; flex-direction: column; gap: 10px;
+      color: white; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4); z-index: 2000;
     }
     .popup-dialog { left: 0; max-height: 60vh; overflow-y: auto; min-width: 240px; }
     .download-menu { right: 0; }
 
     .popup-dialog label, .popup-dialog strong {
-      font-size: 13px;
-      margin-bottom: 4px;
+      font-size: 13px; margin-bottom: 4px;
     }
-    .popup-dialog input, .popup-dialog select {
-      margin-top: 4px;
-      width: 100%;
-    }
+    .popup-dialog input, .popup-dialog select { margin-top: 4px; width: 100%; }
 
-    .highlight-section {
-      border-top: 1px solid rgba(255,255,255,0.2);
-      padding-top: 8px;
-    }
-    .highlight-row { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
-    .add-word-input { width:100%; padding:6px; border-radius:6px; border:none; outline:none; }
+    .highlight-section { border-top: 1px solid rgba(255,255,255,0.2); padding-top: 8px; }
+    .highlight-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+    .add-word-input { width: 100%; padding: 6px; border-radius: 6px; border: none; outline: none; }
 
     @media (max-width: 600px) {
-      .chat-input-bar {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 8px;
-      }
+      .chat-input-bar { flex-direction: column; align-items: stretch; gap: 8px; }
       .download-btn { width: 100%; }
     }
   </style>
@@ -140,14 +77,14 @@
     </div>
     <div class="bottom-spacer"></div>
     <div class="chat-input-bar">
-      <div style="position:relative;">
+      <div style="position: relative;">
         <button id="settingsBtn" class="plus-btn">+</button>
         <div id="settingsPanel" class="popup-dialog" style="display:none;">
-          <label>Font Color:<input type="color" id="fontColor" value="#ececf1" /></label>
-          <label>Background:<input type="color" id="bgColor" value="#000000" /></label>
-          <label>Background Image:<input type="file" id="bgImage" accept="image/*" /></label>
-          <label>Text Size:<input type="range" id="fontSize" min="20" max="100" value="45" /></label>
-          <label>Line Spacing:<input type="range" id="lineHeight" min="1" max="3" step="0.1" value="1.4" /></label>
+          <label>Font Color: <input type="color" id="fontColor" value="#ececf1" /></label>
+          <label>Background: <input type="color" id="bgColor" value="#000000" /></label>
+          <label>Background Image: <input type="file" id="bgImage" accept="image/*" /></label>
+          <label>Text Size: <input type="range" id="fontSize" min="20" max="100" value="45" /></label>
+          <label>Line Spacing: <input type="range" id="lineHeight" min="1" max="3" step="0.1" value="1.4" /></label>
           <label>Alignment:
             <select id="textAlign">
               <option value="left">Left</option>
@@ -155,22 +92,19 @@
               <option value="right">Right</option>
             </select>
           </label>
-          <label>Upload Overlay Image:<input type="file" id="overlayUpload" accept="image/*" /></label>
-          <label>Overlay Size:<input type="range" id="overlaySize" min="50" max="1000" value="200" /></label>
-
+          <label>Upload Overlay Image: <input type="file" id="overlayUpload" accept="image/*" /></label>
+          <label>Overlay Size: <input type="range" id="overlaySize" min="50" max="1000" value="200" /></label>
+          <label>Upload Font from Device: <input type="file" id="fontUpload" accept=".ttf,.otf,.woff,.woff2" /></label>
           <div class="highlight-section">
             <strong>Highlight Words</strong>
-            <div>
-              <input type="checkbox" id="selectAllWords"> <label for="selectAllWords">Select All / Unselect All</label>
-            </div>
+            <div><input type="checkbox" id="selectAllWords"> <label for="selectAllWords">Select All / Unselect All</label></div>
             <div id="highlightWordsContainer"></div>
             <input class="add-word-input" type="text" id="addWordInput" placeholder="Add custom word and press Enter" />
           </div>
-
         </div>
       </div>
       <textarea id="textInput" class="chat-textarea" placeholder="Type your text here"></textarea>
-      <div style="position:relative;">
+      <div style="position: relative;">
         <button id="downloadBtn" class="download-btn">Download</button>
         <div id="downloadMenu" class="download-menu" style="display:none;">
           <button data-scale="1" data-quality="low">Low Quality</button>
@@ -197,121 +131,117 @@
 
     const stopWords = ["the","is","a","an","and","or","in","on","at","of","for","to","with","by","you","your","this","that","it","as","be","are","was","were","from","into","but","if","so","about","can","not","i","me","my","myself","we","our","ours","ourselves","he","him","his","himself","she","her","hers","herself","they","them","their","theirs","themselves","what","which","who","whom","these","those","am","been","being","have","has","had","having","do","does","did","doing","because","until","while","against","between","through","during","before","after","above","below","up","down","out","off","over","under","again","further","then","once","here","there","when","where","why","all","any","both","each","few","more","most","other","some","such","no","nor","only","own","same","than","too","very"];
 
-    // Update highlighted text
     function updateHighlightedText() {
-      let text = textInput.value;
-      let allWords = [...detectedWords, ...customWords];
-      allWords.forEach(word => {
-        if (highlightedWords[word]) {
-          let regex = new RegExp(`\\b(${word})\\b`, "gi");
-          text = text.replace(regex, '<span style="font-weight:bold;">$1</span>');
+      let txt = textInput.value;
+      [...detectedWords, ...customWords].forEach(w => {
+        if (highlightedWords[w]) {
+          const regex = new RegExp(`\\b(${w})\\b`, 'gi');
+          txt = txt.replace(regex, '<span style="font-weight:bold;">$1</span>');
         }
       });
-      textEl.innerHTML = text.replace(/\n/g,"<br/>");
+      textEl.innerHTML = txt.replace(/\n/g, "<br/>");
     }
 
     function updateDetectedWords() {
-      const words = textInput.value.toLowerCase().replace(/[.,!?;:()"]/g,"").split(/\s+/).filter(w => w && !stopWords.includes(w));
+      const words = textInput.value.toLowerCase().replace(/[.,!?;:()"]/g, "").split(/\s+/).filter(w => w && !stopWords.includes(w));
       const freq = {};
-      words.forEach(w => { freq[w] = (freq[w] || 0)+1; });
-      detectedWords = Object.keys(freq).sort((a,b)=>freq[b]-freq[a] || b.length - a.length).slice(0,8);
+      words.forEach(w => freq[w] = (freq[w]||0) + 1);
+      detectedWords = Object.keys(freq).sort((a,b) => freq[b] - freq[a] || b.length - a.length).slice(0,8);
       detectedWords.forEach(w => { if (!(w in highlightedWords)) highlightedWords[w] = true; });
       renderHighlightWords();
     }
 
     function renderHighlightWords() {
       highlightContainer.innerHTML = "";
-      const allWords = [...detectedWords, ...customWords];
-      allWords.forEach(word=>{
-        const div = document.createElement("div");
-        div.className="highlight-row";
-        const cb = document.createElement("input");
-        cb.type="checkbox";
-        cb.checked = !!highlightedWords[word];
-        cb.onchange = () => { highlightedWords[word] = cb.checked; updateHighlightedText(); };
-        const lbl = document.createElement("label");
-        lbl.innerText = word;
-        div.appendChild(cb);
-        div.appendChild(lbl);
+      [...detectedWords, ...customWords].forEach(w => {
+        const div = document.createElement("div"); div.className = "highlight-row";
+        const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!highlightedWords[w];
+        cb.onchange = () => { highlightedWords[w] = cb.checked; updateHighlightedText(); };
+        const lbl = document.createElement("label"); lbl.innerText = w;
+        div.append(cb, lbl);
         highlightContainer.appendChild(div);
       });
       updateHighlightedText();
-      selectAllCheckbox.checked = allWords.every(w=>highlightedWords[w]);
+      selectAllCheckbox.checked = [...detectedWords, ...customWords].every(w => highlightedWords[w]);
     }
 
-    textInput.addEventListener("input", ()=>{
-      updateDetectedWords();
-      updateHighlightedText();
-    });
-
-    addWordInput.addEventListener("keydown", e=>{
-      if(e.key==="Enter"){
+    textInput.addEventListener("input", () => { updateDetectedWords(); updateHighlightedText(); });
+    addWordInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
         const w = e.target.value.toLowerCase().trim();
-        if(w && !customWords.includes(w)){
-          customWords.push(w);
-          highlightedWords[w]=true;
-          renderHighlightWords();
-          e.target.value="";
+        if (w && !customWords.includes(w)) {
+          customWords.push(w); highlightedWords[w] = true;
+          renderHighlightWords(); e.target.value = "";
         }
       }
     });
-
-    selectAllCheckbox.addEventListener("change", ()=>{
-      const allWords = [...detectedWords, ...customWords];
-      allWords.forEach(w=>highlightedWords[w]=selectAllCheckbox.checked);
+    selectAllCheckbox.addEventListener("change", () => {
+      [...detectedWords, ...customWords].forEach(w => highlightedWords[w] = selectAllCheckbox.checked);
       renderHighlightWords();
     });
 
-    // Settings
-    settingsBtn.onclick = ()=>{ settingsPanel.style.display = settingsPanel.style.display==="none"?"flex":"none"; };
-    document.getElementById("fontColor").oninput = e=>textEl.style.color = e.target.value;
-    document.getElementById("bgColor").oninput = e=>canvas.style.background=e.target.value;
-    document.getElementById("bgImage").onchange = e=>{
-      const file = e.target.files[0]; if(!file) return;
+    settingsBtn.onclick = () => settingsPanel.style.display = settingsPanel.style.display === "none" ? "flex" : "none";
+    document.getElementById("fontColor").oninput = e => textEl.style.color = e.target.value;
+    document.getElementById("bgColor").oninput = e => canvas.style.background = e.target.value;
+    document.getElementById("bgImage").onchange = e => {
+      const file = e.target.files[0]; if (!file) return;
       const reader = new FileReader();
-      reader.onload=ev=>canvas.style.background=`url(${ev.target.result}) center/cover no-repeat`;
+      reader.onload = ev => canvas.style.background = `url(${ev.target.result}) center/cover no-repeat`;
       reader.readAsDataURL(file);
     };
-    document.getElementById("fontSize").oninput=e=>textEl.style.fontSize=e.target.value+"px";
-    document.getElementById("lineHeight").oninput=e=>textEl.style.lineHeight=e.target.value;
-    document.getElementById("textAlign").oninput=e=>textEl.style.textAlign=e.target.value;
+    document.getElementById("fontSize").oninput = e => textEl.style.fontSize = e.target.value + "px";
+    document.getElementById("lineHeight").oninput = e => textEl.style.lineHeight = e.target.value;
+    document.getElementById("textAlign").oninput = e => textEl.style.textAlign = e.target.value;
 
-    // Overlay
-    document.getElementById("overlayUpload").onchange = e=>{
-      const file = e.target.files[0]; if(!file) return;
+    document.getElementById("overlayUpload").onchange = e => {
+      const file = e.target.files[0]; if (!file) return;
       const reader = new FileReader();
-      reader.onload=ev=>{
-        overlay.src = ev.target.result; overlay.style.display="block";
-        overlay.style.top = overlayY+"px"; overlay.style.left = overlayX+"px";
-        overlay.style.width = document.getElementById("overlaySize").value+"px";
+      reader.onload = ev => {
+        overlay.src = ev.target.result; overlay.style.display = "block";
+        overlay.style.top = overlayY + "px"; overlay.style.left = overlayX + "px";
+        overlay.style.width = document.getElementById("overlaySize").value + "px";
       };
       reader.readAsDataURL(file);
     };
-    document.getElementById("overlaySize").oninput = e=>overlay.style.width=e.target.value+"px";
+    document.getElementById("overlaySize").oninput = e => overlay.style.width = e.target.value + "px";
 
-    overlay.addEventListener("mousedown", ()=>{ dragging=true; });
-    window.addEventListener("mouseup", ()=>{ dragging=false; });
-    window.addEventListener("mousemove", e=>{
-      if(dragging){ overlayX+=e.movementX; overlayY+=e.movementY; overlay.style.left=overlayX+"px"; overlay.style.top=overlayY+"px"; }
+    overlay.addEventListener("mousedown", () => dragging = true);
+    window.addEventListener("mouseup", () => dragging = false);
+    window.addEventListener("mousemove", e => {
+      if (dragging) {
+        overlayX += e.movementX; overlayY += e.movementY;
+        overlay.style.left = overlayX + "px"; overlay.style.top = overlayY + "px";
+      }
     });
 
-    // Download
-    const downloadBtn=document.getElementById("downloadBtn");
-    const downloadMenu=document.getElementById("downloadMenu");
-    downloadBtn.onclick=()=>{ downloadMenu.style.display = downloadMenu.style.display==="none"?"flex":"none"; };
-    document.querySelectorAll("#downloadMenu button").forEach(btn=>{
-      btn.onclick=()=>{
-        const scale=parseInt(btn.dataset.scale);
-        html2canvas(canvas,{scale}).then(c=>{
-          const link=document.createElement("a");
-          link.download=`image-${btn.dataset.quality}.png`;
-          link.href=c.toDataURL();
+    document.getElementById("fontUpload").onchange = e => {
+      const file = e.target.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const font = new FontFace(file.name, `url(${ev.target.result})`);
+        font.load().then(loaded => {
+          document.fonts.add(loaded);
+          textEl.style.fontFamily = `"${file.name}", sans-serif`;
+        }).catch(err => console.error("Font load failed:", err));
+      };
+      reader.readAsDataURL(file);
+    };
+
+    const downloadBtn = document.getElementById("downloadBtn"),
+          downloadMenu = document.getElementById("downloadMenu");
+    downloadBtn.onclick = () => downloadMenu.style.display = downloadMenu.style.display === "none" ? "flex" : "none";
+    document.querySelectorAll("#downloadMenu button").forEach(btn => {
+      btn.onclick = () => {
+        const scale = parseInt(btn.dataset.scale);
+        html2canvas(canvas, { scale }).then(c => {
+          const link = document.createElement("a");
+          link.download = `image-${btn.dataset.quality}.png`;
+          link.href = c.toDataURL();
           link.click();
         });
-        downloadMenu.style.display="none";
+        downloadMenu.style.display = "none";
       };
     });
-
   </script>
 </body>
 </html>
