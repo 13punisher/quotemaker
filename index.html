@@ -1,685 +1,768 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
-<title>Text Image Generator with Highlights</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <title>Text Image Generator with Highlights</title>
 
-<!-- Google Font -->
-<link href="https://fonts.googleapis.com/css2?family=Artifakt+Element&display=swap" rel="stylesheet">
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Artifakt+Element&display=swap" rel="stylesheet">
 
-<script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
-<style>
-:root { 
-  --panel-bg: #2a2b2d; 
-  --panel-fg: #fff; 
-  --accent: #10a37f; 
-  --dark: #202123; 
-}
-body { 
-  margin: 0; 
-  font-family: "Artifakt Element", sans-serif; 
-  background: #121212; 
-  color: #fff; 
-}
-.app { 
-  display:flex; 
-  flex-direction:column; 
-  align-items:center; 
-  padding:12px; 
-  padding-bottom:220px; 
-}
+  <style>
+    :root { 
+      --panel-bg: #2a2b2d; 
+      --panel-fg: #fff; 
+      --accent: #10a37f; 
+      --dark: #202123; 
+    }
+    body { 
+      margin: 0; 
+      font-family: "Artifakt Element", sans-serif; 
+      background: #121212; 
+      color: #fff; 
+    }
+    .app { 
+      display:flex; 
+      flex-direction:column; 
+      align-items:center; 
+      padding:12px; 
+      padding-bottom:220px; 
+    }
 
-/* Canvas */
-.image-canvas {
-  aspect-ratio: 9/16;
-  width: 100%;
-  max-width: 480px;
-  display:flex; 
-  justify-content:center; 
-  align-items:center;
-  text-align:center; 
-  background:#000;
-  position:relative; 
-  overflow:hidden;
-}
-.text-box {
-  position:absolute;
-  cursor:text;
-  min-width:20px;
-  min-height:20px;
-  outline:none;
-  padding:2px 4px;
-  border-radius:4px;
-}
-.text-box.active {
-  outline:2px dashed var(--accent);
-}
+    /* Canvas */
+    .image-canvas {
+      aspect-ratio: 9/16;
+      width: 100%;
+      max-width: 480px;
+      display:flex; 
+      justify-content:center; 
+      align-items:center;
+      text-align:center; 
+      background:#000;
+      position:relative; 
+      overflow:hidden;
+    }
+    .editable-text { 
+      position:absolute;
+      max-width:85%; 
+      word-wrap:break-word; 
+      white-space:pre-wrap; 
+      color:#ececf1; 
+      font-size:15px; 
+      line-height:1.4; 
+      text-align:left; 
+      cursor:text;
+      padding:2px 4px;
+    }
+    .editable-text.selected { 
+      outline: 2px solid var(--accent); 
+    }
 
-/* Bottom spacer */
-.bottom-spacer { height:32px; }
+    .bottom-spacer { height:32px; }
 
-/* Download button (top right) */
-.download-container {
-  position:fixed;
-  top:12px; right:12px;
-  z-index:1100;
-}
-.download-btn, .download-menu button {
-  background: var(--accent); 
-  color: #fff; 
-  padding:10px 16px; 
-  border:none; 
-  border-radius:8px;
-  cursor:pointer; 
-  font-size:15px; 
-  transition: background .2s;
-}
-.download-btn:hover, .download-menu button:hover { background:#0d8c6b; }
-.download-menu {
-  position:absolute; 
-  top:50px; right:0;
-  background:var(--panel-bg); 
-  border-radius:8px; 
-  padding:10px; 
-  display:none; 
-  flex-direction:column; 
-  gap:10px; 
-  color:var(--panel-fg); 
-  box-shadow:0 6px 18px rgba(0,0,0,.4); 
-  min-width:200px;
-  z-index:1200;
-}
+    /* Download button (top right) */
+    .download-container {
+      position:fixed;
+      top:12px; right:12px;
+      z-index:1100;
+    }
+    .download-btn, .download-menu button {
+      background: var(--accent); 
+      color: #fff; 
+      padding:10px 16px; 
+      border:none; 
+      border-radius:8px;
+      cursor:pointer; 
+      font-size:15px; 
+      transition: background .2s;
+    }
+    .download-btn:hover, .download-menu button:hover { background:#0d8c6b; }
+    .download-menu {
+      position:absolute; 
+      top:50px; right:0;
+      background:var(--panel-bg); 
+      border-radius:8px; 
+      padding:10px; 
+      display:none; 
+      flex-direction:column; 
+      gap:10px; 
+      color:var(--panel-fg); 
+      box-shadow:0 6px 18px rgba(0,0,0,.4); 
+      min-width:200px;
+      z-index:1200;
+    }
 
-/* Toolbar */
-.settings-toolbar {
-  position:fixed;
-  bottom:60px; 
-  left:0; 
-  right:0;
-  display:flex; 
-  overflow-x:auto;
-  background:#1e1f21;
-  padding:8px;
-  gap:8px;
-  z-index:200;
-  box-shadow:0 -2px 8px rgba(0,0,0,.4);
-}
-.settings-toolbar button {
-  flex:0 0 auto;
-  background:#2d2d2d;
-  border:none;
-  padding:8px 12px;
-  border-radius:8px;
-  color:#fff;
-  font-size:14px;
-  cursor:pointer;
-}
-.settings-toolbar button:hover { background:#3a3b3c; }
+    /* Chat input */
+    .chat-input-bar {
+      position:fixed; 
+      bottom:0; left:0; right:0;
+      display:flex; 
+      align-items:flex-end; 
+      justify-content:space-between;
+      background:var(--dark); 
+      padding:10px 12px; 
+      border-top:1px solid #444;
+      gap:10px; 
+      z-index:100; 
+      box-shadow:0 -2px 8px rgba(0,0,0,.25);
+    }
+    .chat-textarea {
+      flex:1; 
+      max-height:180px; 
+      min-height:40px;
+      resize:none; 
+      background:#2d2d2d; 
+      color:#fff; 
+      border:none; 
+      border-radius:16px; 
+      padding:10px 14px; 
+      font-size:15px; 
+      outline:none;
+    }
 
-/* Panels */
-.settings-panel {
-  position:fixed;
-  bottom:110px;
-  left:10px;
-  right:10px;
-  background:var(--panel-bg);
-  color:var(--panel-fg);
-  border-radius:16px;
-  padding:16px;
-  box-shadow:0 6px 18px rgba(0,0,0,.5);
-  max-height:50vh;
-  overflow-y:auto;
-  display:none;
-  z-index:300;
-  animation: slideUp .3s ease;
-}
-@keyframes slideUp {
-  from { transform:translateY(30px); opacity:0; }
-  to { transform:translateY(0); opacity:1; }
-}
-.settings-panel label, 
-.settings-panel strong { 
-  font-size:14px; 
-  margin-bottom:6px; 
-  display:flex; 
-  align-items:center; 
-  gap:8px; 
-}
-.settings-panel input[type="color"], 
-.settings-panel select, 
-.settings-panel input[type="file"], 
-.settings-panel input[type="range"], 
-.settings-panel input[type="number"] {
-  flex:1;
-  margin-top:4px;
-}
-.slider-row { 
-  display:flex; 
-  align-items:center; 
-  gap:8px; 
-  margin-bottom:10px;
-}
-.slider-value { 
-  font-size:13px; 
-  color:#ddd; 
-  min-width:44px; 
-  text-align:right; 
-}
-.highlight-section { 
-  border-top:1px solid rgba(255,255,255,0.12); 
-  padding-top:8px; 
-  margin-top:8px;
-}
-.highlight-row { 
-  display:flex; 
-  align-items:center; 
-  gap:8px; 
-  margin-bottom:6px; 
-}
-.highlight-row label { 
-  flex:1; 
-  overflow:hidden; 
-  white-space:nowrap; 
-  text-overflow:ellipsis; 
-  cursor:pointer; 
-}
-.add-word-input { 
-  width:100%; 
-  padding:8px; 
-  border-radius:6px; 
-  border:none; 
-  outline:none; 
-  background:#3a3b3c; 
-  color:#fff; 
-}
+    /* Toolbar */
+    .settings-toolbar {
+      position:fixed;
+      bottom:60px; 
+      left:0; 
+      right:0;
+      display:flex; 
+      overflow-x:auto;
+      background:#1e1f21;
+      padding:8px;
+      gap:8px;
+      z-index:200;
+      box-shadow:0 -2px 8px rgba(0,0,0,.4);
+    }
+    .settings-toolbar button {
+      flex:0 0 auto;
+      background:#2d2d2d;
+      border:none;
+      padding:8px 12px;
+      border-radius:8px;
+      color:#fff;
+      font-size:14px;
+      cursor:pointer;
+    }
+    .settings-toolbar button:hover {
+      background:#3a3b3c;
+    }
 
-/* Text panel styling */
-.text-panel-section { margin-bottom:12px; }
-.text-panel-section label { display:block; margin-bottom:4px; }
-.text-panel-buttons { display:flex; gap:6px; margin-top:4px; flex-wrap:wrap; }
-.text-panel-buttons button { padding:4px 8px; font-size:14px; cursor:pointer; border-radius:4px; border:none; background:#2d2d2d; color:#fff; }
-.text-panel-buttons button.active { background:var(--accent); }
-</style>
+    /* Panels */
+    .settings-panel {
+      position:fixed;
+      bottom:110px;
+      left:10px;
+      right:10px;
+      background:var(--panel-bg);
+      color:var(--panel-fg);
+      border-radius:16px;
+      padding:16px;
+      box-shadow:0 6px 18px rgba(0,0,0,.5);
+      max-height:60vh;
+      overflow-y:auto;
+      display:none;
+      z-index:300;
+      animation: slideUp .3s ease;
+    }
+    @keyframes slideUp {
+      from { transform:translateY(30px); opacity:0; }
+      to { transform:translateY(0); opacity:1; }
+    }
+
+    .settings-panel label, 
+    .settings-panel strong { 
+      font-size:14px; 
+      margin-bottom:6px; 
+      display:flex; 
+      align-items:center; 
+      gap:8px; 
+    }
+    .settings-panel input[type="color"], 
+    .settings-panel select, 
+    .settings-panel input[type="file"], 
+    .settings-panel input[type="range"], 
+    .settings-panel input[type="number"] {
+      flex:1;
+      margin-top:4px;
+    }
+
+    .slider-row { 
+      display:flex; 
+      align-items:center; 
+      gap:8px; 
+      margin-bottom:10px;
+    }
+    .slider-value { 
+      font-size:13px; 
+      color:#ddd; 
+      min-width:44px; 
+      text-align:right; 
+    }
+
+    .highlight-section { 
+      border-top:1px solid rgba(255,255,255,0.12); 
+      padding-top:8px; 
+      margin-top:8px;
+    }
+    .highlight-row { 
+      display:flex; 
+      align-items:center; 
+      gap:8px; 
+      margin-bottom:6px; 
+    }
+    .highlight-row label { 
+      flex:1; 
+      overflow:hidden; 
+      white-space:nowrap; 
+      text-overflow:ellipsis; 
+      cursor:pointer; 
+    }
+
+    .add-word-input { 
+      width:100%; 
+      padding:8px; 
+      border-radius:6px; 
+      border:none; 
+      outline:none; 
+      background:#3a3b3c; 
+      color:#fff; 
+    }
+
+    .text-control-row { display:flex; gap:6px; margin-bottom:6px; align-items:center; }
+    .text-control-row button { padding:4px 6px; font-size:13px; }
+    .text-control-row input[type=range], .text-control-row input[type=number] { flex:1; }
+  </style>
 </head>
 <body>
-<div class="app">
-  <div id="canvas" class="image-canvas" aria-label="preview canvas"></div>
-  <div class="bottom-spacer"></div>
-</div>
-
-<!-- Download -->
-<div class="download-container">
-  <button id="downloadBtn" class="download-btn">Download</button>
-  <div id="downloadMenu" class="download-menu">
-    <button data-scale="1" data-quality="low">Low Quality</button>
-    <button data-scale="2" data-quality="medium">Medium Quality</button>
-    <button data-scale="4" data-quality="high">High Quality</button>
+  <div class="app">
+    <div id="canvas" class="image-canvas" aria-label="preview canvas"></div>
+    <div class="bottom-spacer"></div>
   </div>
-</div>
 
-<!-- Settings toolbar -->
-<div class="settings-toolbar">
-  <button data-panel="textPanel">Text</button>
-  <button data-panel="overlayPanel">Overlay</button>
-  <button data-panel="highlightPanel">Highlights</button>
-</div>
+  <!-- Download -->
+  <div class="download-container">
+    <button id="downloadBtn" class="download-btn">Download</button>
+    <div id="downloadMenu" class="download-menu">
+      <button data-scale="1" data-quality="low">Low Quality</button>
+      <button data-scale="2" data-quality="medium">Medium Quality</button>
+      <button data-scale="4" data-quality="high">High Quality</button>
+    </div>
+  </div>
 
-<!-- Panels -->
-<div id="textPanel" class="settings-panel">
-  <div class="text-panel-section">
+  <!-- Settings toolbar -->
+  <div class="settings-toolbar">
+    <button data-panel="textPanel">Text</button>
+    <button data-panel="overlayPanel">Overlay</button>
+    <button data-panel="highlightPanel">Highlights</button>
+  </div>
+
+  <!-- Text Panel -->
+  <div id="textPanel" class="settings-panel">
     <strong>Text Selection</strong>
     <select id="textSelect"></select>
-  </div>
 
-  <div class="text-panel-section">
     <strong>Edit Text</strong>
-    <textarea id="textEdit" rows="3" style="width:100%; background:#2d2d2d; color:#fff; border-radius:6px; border:none; padding:6px;"></textarea>
-  </div>
+    <textarea id="textEditInput" style="width:100%;height:50px;"></textarea>
 
-  <div class="text-panel-section text-panel-buttons">
-    <button id="deleteText">🗑 Delete</button>
-    <button id="copyText">📄 Copy</button>
-  </div>
+    <div class="text-control-row">
+      <button id="deleteText">🗑 Delete</button>
+      <button id="copyText">📄 Copy</button>
+    </div>
 
-  <div class="text-panel-section">
     <strong>Text Position</strong>
-    <div class="slider-row">
-      <label>X: <input type="range" id="posX" min="0" max="480"><span id="posXVal">0</span>px</label>
+    <div class="text-control-row">
+      <label>X:</label>
+      <input type="range" id="posX" min="0" max="480" value="0">
+      <input type="number" id="posXVal" min="0" max="480" value="0">
     </div>
-    <div class="slider-row">
-      <label>Y: <input type="range" id="posY" min="0" max="853"><span id="posYVal">0</span>px</label>
+    <div class="text-control-row">
+      <label>Y:</label>
+      <input type="range" id="posY" min="0" max="853" value="0">
+      <input type="number" id="posYVal" min="0" max="853" value="0">
     </div>
-    <div class="text-panel-buttons">
-      <button data-move="-1px" data-dir="x">⬅️</button>
-      <button data-move="1px" data-dir="x">➡️</button>
-      <button data-move="-1px" data-dir="y">⬆️</button>
-      <button data-move="1px" data-dir="y">⬇️</button>
-      <button data-align="top">Top</button>
-      <button data-align="bottom">Bottom</button>
-      <button data-align="left">Left</button>
-      <button data-align="right">Right</button>
-      <button data-align="center">Center</button>
-    </div>
-  </div>
 
-  <div class="text-panel-section">
-    <strong>Font Color</strong>
-    <input type="color" id="fontColorPicker" value="#ececf1">
-    <input type="number" id="fontOpacity" min="0" max="100" value="100">%
-  </div>
+    <div class="text-control-row">
+      <button id="alignLeft">⬅️</button>
+      <button id="alignCenter">⬜</button>
+      <button id="alignRight">➡️</button>
+      <button id="alignTop">⬆️</button>
+      <button id="alignMiddle">⬜</button>
+      <button id="alignBottom">⬇️</button>
+    </div>
 
-  <div class="text-panel-section">
+    <strong>Font Color & Opacity</strong>
+    <div class="text-control-row">
+      <input type="color" id="fontColorPicker">
+      <input type="number" id="fontOpacity" min="0" max="100" value="100">
+    </div>
+
     <strong>Font Size</strong>
-    <input type="range" id="fontSizeSlider" min="2" max="500" value="15">
-    <span id="fontSizeVal">15px</span>
-    <div class="text-panel-buttons">
-      <button data-size="-1">-</button>
-      <button data-size="1">+</button>
+    <div class="text-control-row">
+      <button id="fontSizeMinus">-</button>
+      <input type="range" id="fontSizeSlider" min="2" max="500" value="15">
+      <input type="number" id="fontSizeVal" min="2" max="500" value="15">
+      <button id="fontSizePlus">+</button>
     </div>
-  </div>
 
-  <div class="text-panel-section">
     <strong>Font Selection / Upload</strong>
-    <select id="fontSelect">
-      <option value="Artifakt Element">Artifakt Element</option>
-      <option value="Arial">Arial</option>
-      <option value="Verdana">Verdana</option>
-      <option value="Times New Roman">Times New Roman</option>
-    </select>
-    <input type="file" id="fontUpload" accept=".ttf,.otf,.woff,.woff2">
-  </div>
+    <div class="text-control-row">
+      <select id="fontSelect">
+        <option value="Artifakt Element">Artifakt Element</option>
+        <option value="Arial">Arial</option>
+        <option value="Verdana">Verdana</option>
+        <option value="Times New Roman">Times New Roman</option>
+      </select>
+      <input type="file" id="fontUpload" accept=".ttf,.otf,.woff,.woff2">
+    </div>
 
-  <div class="text-panel-section text-panel-buttons">
-    <button data-style="bold">B</button>
-    <button data-style="italic">I</button>
-    <button data-style="underline">U</button>
-    <button data-style="line-through">S</button>
-  </div>
+    <strong>Text Style</strong>
+    <div class="text-control-row">
+      <button id="boldBtn">B</button>
+      <button id="italicBtn">I</button>
+      <button id="underlineBtn">U</button>
+      <button id="strikeBtn">S</button>
+    </div>
 
-  <div class="text-panel-section text-panel-buttons">
-    <button data-align-text="left">Left</button>
-    <button data-align-text="center">Center</button>
-    <button data-align-text="right">Right</button>
-    <button data-align-text="justify">Justify</button>
-  </div>
-
-  <div class="text-panel-section">
-    <strong>Line Spacing</strong>
-    <input type="range" id="lineSpacing" min="0.5" max="3" step="0.1" value="1.4">
-    <span id="lineSpacingVal">1.4</span>
-    <div class="text-panel-buttons">
-      <button data-line="-0.1">-</button>
-      <button data-line="0.1">+</button>
+    <strong>Line & Letter Spacing</strong>
+    <div class="text-control-row">
+      <label>Line:</label>
+      <input type="range" id="lineSpacing" min="0.5" max="3" step="0.1" value="1.4">
+      <input type="number" id="lineSpacingVal" min="0.5" max="3" step="0.1" value="1.4">
+    </div>
+    <div class="text-control-row">
+      <label>Letter:</label>
+      <input type="range" id="letterSpacing" min="0" max="10" step="0.1" value="0">
+      <input type="number" id="letterSpacingVal" min="0" max="10" step="0.1" value="0">
     </div>
   </div>
 
-  <div class="text-panel-section">
-    <strong>Letter Spacing</strong>
-    <input type="range" id="letterSpacing" min="0" max="5" step="0.1" value="0">
-    <span id="letterSpacingVal">0</span>
-    <div class="text-panel-buttons">
-      <button data-letter="-0.1">-</button>
-      <button data-letter="0.1">+</button>
+  <!-- Overlay Panel -->
+  <div id="overlayPanel" class="settings-panel">
+    <label>Upload Overlay Image: <input id="overlayUpload" type="file" accept="image/*" /></label>
+    <div class="slider-row">
+      <label style="flex:1">Overlay Size:
+        <input id="overlaySize" type="range" min="50" max="1000" value="200" />
+      </label>
+      <div id="overlaySizeVal" class="slider-value">200px</div>
     </div>
   </div>
-</div>
 
-<!-- Overlay Panel -->
-<div id="overlayPanel" class="settings-panel">
-  <label>Upload Overlay Image: <input id="overlayUpload" type="file" accept="image/*" /></label>
-  <div class="slider-row">
-    <label style="flex:1">Overlay Size:
-      <input id="overlaySize" type="range" min="50" max="1000" value="200" />
-    </label>
-    <div id="overlaySizeVal" class="slider-value">200px</div>
+  <!-- Highlights Panel -->
+  <div id="highlightPanel" class="settings-panel">
+    <div class="highlight-section">
+      <strong>Highlight Words</strong>
+      <div><input id="selectAllWords" type="checkbox" /> <label for="selectAllWords">Select All / Unselect All</label></div>
+      <div id="highlightWordsContainer"></div>
+      <input id="addWordInput" class="add-word-input" placeholder="Add custom word and press Enter" />
+    </div>
   </div>
-  <img id="overlay" src="" style="position:absolute; display:none; left:40px; top:40px; cursor:grab; user-select:none;">
-</div>
 
-<!-- Highlights Panel -->
-<div id="highlightPanel" class="settings-panel">
-  <div class="highlight-section">
-    <strong>Highlight Words</strong>
-    <div><input id="selectAllWords" type="checkbox" /> <label for="selectAllWords">Select All / Unselect All</label></div>
-    <div id="highlightWordsContainer"></div>
-    <input id="addWordInput" class="add-word-input" placeholder="Add custom word and press Enter" />
+  <!-- Chat input -->
+  <div class="chat-input-bar" role="region" aria-label="controls">
+    <textarea id="textInput" class="chat-textarea" placeholder="Type your text here"></textarea>
   </div>
-</div>
 
-<script>
-// Entire corrected JS goes here
-function setActiveText(box) {
-  if(activeText) activeText.classList.remove('active');
-  activeText = box;
-  if(activeText) activeText.classList.add('active');
-  updatePanelValues();
-}
+  <script>
+    /***********************
+      Elements
+    ***********************/
+    const canvas = document.getElementById('canvas');
+    const textInput = document.getElementById('textInput');
+    const overlay = document.createElement('img'); overlay.id="overlay";
+    overlay.style.display="none"; overlay.style.position="absolute"; overlay.draggable=false;
+    canvas.appendChild(overlay);
 
-function updateTextSelect(){
-  textSelect.innerHTML = "";
-  textBoxes.forEach((box, idx)=>{
-    const opt = document.createElement('option');
-    opt.value = idx;
-    opt.textContent = box.innerText.slice(0,20) || 'Text '+(idx+1);
-    textSelect.appendChild(opt);
-  });
-  if(activeText) textSelect.value = textBoxes.indexOf(activeText);
-}
+    const panels = document.querySelectorAll('.settings-panel');
+    const toolbarButtons = document.querySelectorAll('.settings-toolbar button');
 
-function updatePanelValues(){
-  if(!activeText) return;
-  textEdit.value = activeText.innerText;
-  posX.value = parseInt(activeText.style.left);
-  posY.value = parseInt(activeText.style.top);
-  posXVal.textContent = posX.value;
-  posYVal.textContent = posY.value;
-  fontColorPicker.value = rgbToHex(activeText.style.color);
-  fontOpacity.value = Math.round(parseFloat(getComputedStyle(activeText).opacity)*100);
-  fontSizeSlider.value = parseInt(activeText.style.fontSize);
-  fontSizeVal.textContent = fontSizeSlider.value+'px';
-  fontSelect.value = activeText.style.fontFamily;
-  lineSpacing.value = parseFloat(activeText.style.lineHeight);
-  lineSpacingVal.textContent = lineSpacing.value;
-  letterSpacing.value = parseFloat(activeText.style.letterSpacing);
-  letterSpacingVal.textContent = letterSpacing.value;
-  styleButtons.forEach(btn=>{
-    const s = btn.dataset.style;
-    btn.classList.toggle('active', 
-      (s==='bold' && activeText.style.fontWeight==='bold') ||
-      (s==='italic' && activeText.style.fontStyle==='italic') ||
-      (s==='underline' && activeText.style.textDecoration.includes('underline')) ||
-      (s==='line-through' && activeText.style.textDecoration.includes('line-through'))
-    );
-  });
-}
+    // Text panel elements
+    const textPanelSelect = document.getElementById('textSelect');
+    const textEditInput = document.getElementById('textEditInput');
+    const deleteTextBtn = document.getElementById('deleteText');
+    const copyTextBtn = document.getElementById('copyText');
 
-// Text Panel Events
-textSelect.addEventListener('change', ()=> setActiveText(textBoxes[textSelect.value]));
-textEdit.addEventListener('input', ()=> { if(activeText) { activeText.innerText=textEdit.value; updateTextSelect(); updateDetectedWords(); } });
+    const posX = document.getElementById('posX');
+    const posY = document.getElementById('posY');
+    const posXVal = document.getElementById('posXVal');
+    const posYVal = document.getElementById('posYVal');
 
-deleteText.addEventListener('click', ()=>{ 
-  if(activeText){ 
-    canvas.removeChild(activeText); 
-    textBoxes = textBoxes.filter(t=>t!==activeText); 
-    activeText = textBoxes[0] || null;
-    updateTextSelect();
-    updatePanelValues();
-  }
-});
+    const alignLeft = document.getElementById('alignLeft');
+    const alignCenter = document.getElementById('alignCenter');
+    const alignRight = document.getElementById('alignRight');
+    const alignTop = document.getElementById('alignTop');
+    const alignMiddle = document.getElementById('alignMiddle');
+    const alignBottom = document.getElementById('alignBottom');
 
-copyText.addEventListener('click', ()=>{
-  if(activeText){
-    const copy = createTextBox(activeText.innerText);
-    const box = textBoxes[textBoxes.length-1];
-    box.style.left = (parseInt(activeText.style.left)+10)+'px';
-    box.style.top = (parseInt(activeText.style.top)+10)+'px';
-    ['fontSize','fontFamily','color','fontWeight','fontStyle','textDecoration','lineHeight','letterSpacing'].forEach(prop=>{
-      box.style[prop] = activeText.style[prop];
+    const fontColorPicker = document.getElementById('fontColorPicker');
+    const fontOpacity = document.getElementById('fontOpacity');
+
+    const fontSizeSlider = document.getElementById('fontSizeSlider');
+    const fontSizeVal = document.getElementById('fontSizeVal');
+    const fontSizeMinus = document.getElementById('fontSizeMinus');
+    const fontSizePlus = document.getElementById('fontSizePlus');
+
+    const fontSelect = document.getElementById('fontSelect');
+    const fontUpload = document.getElementById('fontUpload');
+
+    const boldBtn = document.getElementById('boldBtn');
+    const italicBtn = document.getElementById('italicBtn');
+    const underlineBtn = document.getElementById('underlineBtn');
+    const strikeBtn = document.getElementById('strikeBtn');
+
+    const lineSpacing = document.getElementById('lineSpacing');
+    const lineSpacingVal = document.getElementById('lineSpacingVal');
+    const letterSpacing = document.getElementById('letterSpacing');
+    const letterSpacingVal = document.getElementById('letterSpacingVal');
+
+    // Highlights elements
+    const highlightContainer = document.getElementById('highlightWordsContainer');
+    const addWordInput = document.getElementById('addWordInput');
+    const selectAllCheckbox = document.getElementById('selectAllWords');
+
+    // Download
+    const downloadBtn = document.getElementById('downloadBtn');
+    const downloadMenu = document.getElementById('downloadMenu');
+
+    let texts = [];
+    let selectedTextId = null;
+
+    // Overlay state
+    let overlayX = 40, overlayY = 40;
+    let dragging = false, startX = 0, startY = 0, startOverlayX = 0, startOverlayY = 0;
+    let startDistance = 0, startScale = 1, currentScale = 1;
+
+    // Word highlighting
+    let detectedWords = [], customWords = [], highlightedWords = {};
+    const stopWords = ["the","is","a","an","and","or","in","on","at","of","for","to","with","by","you","your","this","that","it","as","be","are","was","were","from","into","but","if","so","about","can","not","i","me","my","myself","we","our","ours","he","him","his","himself","she","her","hers","herself","they","them","their","theirs","themselves","what","which","who","whom","these","those","am","been","being","have","has","had","having","do","does","did","doing","because","until","while","against","between","through","during","before","after","above","below","up","down","out","off","over","under","again","further","then","once","here","there","when","where","why","all","any","both","each","few","more","most","other","some","such","no","nor","only","own","same","than","too","very"];
+
+    /***********************
+      Toolbar
+    ***********************/
+    toolbarButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = document.getElementById(btn.dataset.panel);
+        const isOpen = target.style.display === 'block';
+        panels.forEach(p => p.style.display = 'none');
+        if (!isOpen) target.style.display = 'block';
+      });
     });
-    setActiveText(box);
-  }
-});
 
-posX.addEventListener('input', ()=>{ if(activeText){ activeText.style.left = posX.value+'px'; posXVal.textContent = posX.value; } });
-posY.addEventListener('input', ()=>{ if(activeText){ activeText.style.top = posY.value+'px'; posYVal.textContent = posY.value; } });
-fontColorPicker.addEventListener('input', ()=>{ if(activeText) activeText.style.color=fontColorPicker.value; });
-fontOpacity.addEventListener('input', ()=>{ if(activeText) activeText.style.opacity=(fontOpacity.value/100); });
-fontSizeSlider.addEventListener('input', ()=>{ if(activeText){ activeText.style.fontSize=fontSizeSlider.value+'px'; fontSizeVal.textContent=fontSizeSlider.value+'px'; } });
-fontSelect.addEventListener('change', ()=>{ if(activeText) activeText.style.fontFamily=fontSelect.value; });
-
-fontUpload.addEventListener('change', e=>{
-  const f=e.target.files[0];
-  if(f && activeText){
-    const url=URL.createObjectURL(f); 
-    const font=new FontFace(f.name.replace(/\s+/g,'_'),url); 
-    font.load().then(ff=>{document.fonts.add(ff); activeText.style.fontFamily=f.name.replace(/\s+/g,'_'); fontSelect.value=activeText.style.fontFamily;});
-  }
-});
-
-styleButtons.forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    if(!activeText) return;
-    const s = btn.dataset.style;
-    if(s==='bold') activeText.style.fontWeight = (activeText.style.fontWeight==='bold')?'normal':'bold';
-    if(s==='italic') activeText.style.fontStyle = (activeText.style.fontStyle==='italic')?'normal':'italic';
-    if(s==='underline') activeText.style.textDecoration = (activeText.style.textDecoration.includes('underline'))?'none':'underline';
-    if(s==='line-through') activeText.style.textDecoration = (activeText.style.textDecoration.includes('line-through'))?'none':'line-through';
-    btn.classList.toggle('active');
-  });
-});
-
-alignButtons.forEach(btn=>{
-  btn.addEventListener('click', ()=>{ if(!activeText) return; activeText.style.textAlign = btn.dataset.alignText; });
-});
-
-lineSpacing.addEventListener('input', ()=>{ if(activeText){ activeText.style.lineHeight=lineSpacing.value; lineSpacingVal.textContent=lineSpacing.value; } });
-lineButtons.forEach(btn=>{
-  btn.addEventListener('click', ()=>{ 
-    if(!activeText) return; 
-    activeText.style.lineHeight=(parseFloat(activeText.style.lineHeight)+parseFloat(btn.dataset.line)).toFixed(2); 
-    lineSpacing.value = parseFloat(activeText.style.lineHeight); 
-    lineSpacingVal.textContent=lineSpacing.value; 
-  });
-});
-
-letterSpacing.addEventListener('input', ()=>{ if(activeText){ activeText.style.letterSpacing=letterSpacing.value+'px'; letterSpacingVal.textContent=letterSpacing.value; } });
-letterButtons.forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    if(!activeText) return; 
-    let newLetter = (parseFloat(activeText.style.letterSpacing)+parseFloat(btn.dataset.letter)).toFixed(1);
-    activeText.style.letterSpacing=newLetter+'px'; 
-    letterSpacing.value=parseFloat(newLetter); 
-    letterSpacingVal.textContent=letterSpacing.value;
-  });
-});
-
-moveButtons.forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    if(!activeText) return;
-    const val = parseInt(btn.dataset.move);
-    if(btn.dataset.dir==='x') activeText.style.left=(parseInt(activeText.style.left)+val)+'px';
-    else activeText.style.top=(parseInt(activeText.style.top)+val)+'px';
-    updatePanelValues();
-  });
-});
-
-alignRelButtons.forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    if(!activeText) return;
-    const a = btn.dataset.align;
-    if(a==='top') activeText.style.top='0px';
-    if(a==='bottom') activeText.style.top=(canvas.clientHeight-activeText.offsetHeight)+'px';
-    if(a==='left') activeText.style.left='0px';
-    if(a==='right') activeText.style.left=(canvas.clientWidth-activeText.offsetWidth)+'px';
-    if(a==='center'){
-      activeText.style.left=((canvas.clientWidth-activeText.offsetWidth)/2)+'px';
-      activeText.style.top=((canvas.clientHeight-activeText.offsetHeight)/2)+'px';
-    }
-    updatePanelValues();
-  });
-});
-
-/********************
- Overlay
-*********************/
-let overlayX=40, overlayY=40, dragging=false, startX=0, startY=0, startOverlayX=0, startOverlayY=0;
-let startDistance=0, startScale=1, currentScale=1;
-
-overlayUpload.addEventListener('change', e=>{
-  const f=e.target.files[0];
-  if(f){ 
-    const r=new FileReader(); 
-    r.onload=ev=>{
-      overlay.src=ev.target.result; 
-      overlay.style.display='block'; 
-      overlay.style.left=overlayX+'px'; 
-      overlay.style.top=overlayY+'px'; 
-      overlay.width=overlaySizeInput.value; 
-      overlay.style.transform=`scale(${currentScale})`;
-    }; 
-    r.readAsDataURL(f);
-  }
-});
-overlaySizeInput.addEventListener('input', ()=>{
-  overlay.width=overlaySizeInput.value; 
-  overlaySizeVal.textContent=overlaySizeInput.value+"px";
-});
-
-overlay.addEventListener('pointerdown', e=>{
-  dragging=true; startX=e.clientX; startY=e.clientY; startOverlayX=overlayX; startOverlayY=overlayY; overlay.setPointerCapture(e.pointerId);
-});
-overlay.addEventListener('pointermove', e=>{
-  if(!dragging) return; 
-  const dx=e.clientX-startX, dy=e.clientY-startY; 
-  overlayX=startOverlayX+dx; 
-  overlayY=startOverlayY+dy; 
-  overlay.style.left=overlayX+'px'; overlay.style.top=overlayY+'px';
-});
-overlay.addEventListener('pointerup', e=>{ dragging=false; overlay.releasePointerCapture(e.pointerId); });
-
-// pinch zoom
-overlay.addEventListener('touchstart', e=>{
-  if(e.touches.length===2){
-    e.preventDefault();
-    const dx=e.touches[0].clientX - e.touches[1].clientX;
-    const dy=e.touches[0].clientY - e.touches[1].clientY;
-    startDistance = Math.sqrt(dx*dx+dy*dy);
-    startScale = currentScale;
-  }
-}, {passive:false});
-overlay.addEventListener('touchmove', e=>{
-  if(e.touches.length===2){
-    e.preventDefault();
-    const dx=e.touches[0].clientX - e.touches[1].clientX;
-    const dy=e.touches[0].clientY - e.touches[1].clientY;
-    const newDist = Math.sqrt(dx*dx+dy*dy);
-    const scale = newDist / startDistance;
-    currentScale = Math.max(0.2, Math.min(5, startScale * scale));
-    overlay.style.transform = `scale(${currentScale})`;
-    overlaySizeInput.value = Math.round(overlay.naturalWidth * currentScale);
-    overlaySizeVal.textContent = overlaySizeInput.value + "px";
-  }
-}, {passive:false});
-
-/********************
- Highlights
-*********************/
-let detectedWords = [], customWords = [], highlightedWords = {};
-const stopWords = ["the","is","a","an","and","or","in","on","at","of","for","to","with","by","you","your","this","that","it","as","be","are","was","were","from","into","but","if","so","about","can","not","i","me","my","myself","we","our","ours","he","him","his","himself","she","her","hers","herself","they","them","their","theirs","themselves","what","which","who","whom","these","those","am","been","being","have","has","had","having","do","does","did","doing","because","until","while","against","between","through","during","before","after","above","below","up","down","out","off","over","under","again","further","then","once","here","there","when","where","why","all","any","both","each","few","more","most","other","some","such","no","nor","only","own","same","than","too","very"];
-
-function escapeRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
-
-function updateHighlightedText(){
-  textBoxes.forEach(tb=>{
-    let txt = tb.innerText || "";
-    const allOrder = Array.from(new Set([...detectedWords, ...customWords]));
-    allOrder.forEach(w => {
-      if (highlightedWords[w]) {
-        const regex = new RegExp("\\b(" + escapeRegex(w) + ")\\b", "gi");
-        txt = txt.replace(regex, '<span style="font-weight:bold;">$1</span>');
+    document.addEventListener('pointerdown', (e) => {
+      if (![...panels].some(p => p.contains(e.target)) && 
+          ![...toolbarButtons].some(b => b.contains(e.target))) {
+        panels.forEach(p => p.style.display = 'none');
       }
     });
-    tb.innerHTML = txt.replace(/\n/g, "<br/>");
-  });
-}
 
-function updateDetectedWords(){
-  textBoxes.forEach(tb=>{
-    const content = (tb.innerText || "").toLowerCase().replace(/[.,!?;:()"]/g,"");
-    const arr = content.split(/\s+/).filter(w => w && !stopWords.includes(w));
-    const freq = {};
-    arr.forEach(w => freq[w] = (freq[w]||0)+1);
-    detectedWords = Object.keys(freq).sort((a,b)=> (freq[b]-freq[a]) || (b.length - a.length)).slice(0,8);
-    detectedWords.forEach(w => { if (!(w in highlightedWords)) highlightedWords[w] = true; });
-    renderHighlightWords();
-  });
-}
+    /***********************
+      Text management
+    ***********************/
+    function createTextBox(content="New Text") {
+      const div = document.createElement('div');
+      div.className = 'editable-text';
+      div.contentEditable = true;
+      div.style.left = "50px";
+      div.style.top = "50px";
+      div.textContent = content;
+      div.dataset.id = Date.now() + Math.random();
+      canvas.appendChild(div);
+      texts.push(div.dataset.id);
+      updateTextSelect();
+      selectText(div.dataset.id);
+      div.addEventListener('click', e => {
+        e.stopPropagation();
+        selectText(div.dataset.id);
+      });
+      return div;
+    }
 
-function renderHighlightWords(){
-  highlightContainer.innerHTML = "";
-  const all = Array.from(new Set([...detectedWords, ...customWords]));
-  all.forEach((word, idx) => {
-    const id = 'cb_'+idx+'_'+word.replace(/[^a-z0-9]/gi,'_')+'_'+Math.random().toString(36).slice(2,7);
-    const row = document.createElement('div');
-    row.className = 'highlight-row';
+    function getSelectedTextEl() { 
+      return canvas.querySelector(`.editable-text[data-id="${selectedTextId}"]`);
+    }
 
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.id = id;
-    cb.checked = !!highlightedWords[word];
-    cb.addEventListener('change', () => {
-      highlightedWords[word] = cb.checked;
-      updateHighlightedText();
-      selectAllCheckbox.checked = all.every(w => highlightedWords[w]);
+    function selectText(id) {
+      selectedTextId = id;
+      canvas.querySelectorAll('.editable-text').forEach(t => t.classList.remove('selected'));
+      const el = getSelectedTextEl();
+      if(el) el.classList.add('selected');
+      updatePanelValues();
+    }
+
+    function updateTextSelect() {
+      textPanelSelect.innerHTML = "";
+      texts.forEach(id => {
+        const el = canvas.querySelector(`.editable-text[data-id="${id}"]`);
+        if(!el) return;
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = el.textContent.slice(0,20);
+        if(id===selectedTextId) opt.selected=true;
+        textPanelSelect.appendChild(opt);
+      });
+    }
+
+    function updatePanelValues() {
+      const el = getSelectedTextEl();
+      if(!el) return;
+      textEditInput.value = el.textContent;
+      posX.value = parseInt(el.style.left); posXVal.value = posX.value;
+      posY.value = parseInt(el.style.top); posYVal.value = posY.value;
+      fontColorPicker.value = rgbToHex(el.style.color);
+      fontOpacity.value = Math.round(parseFloat(el.style.opacity||1)*100);
+      fontSizeSlider.value = parseInt(el.style.fontSize) || 15;
+      fontSizeVal.value = fontSizeSlider.value;
+      fontSelect.value = el.style.fontFamily || "Artifakt Element";
+      boldBtn.style.background = el.style.fontWeight==="bold"?"#10a37f":"";
+      italicBtn.style.background = el.style.fontStyle==="italic"?"#10a37f":"";
+      underlineBtn.style.background = el.style.textDecoration.includes("underline")?"#10a37f":"";
+      strikeBtn.style.background = el.style.textDecoration.includes("line-through")?"#10a37f":"";
+      lineSpacing.value = parseFloat(el.style.lineHeight)||1.4;
+      lineSpacingVal.value = lineSpacing.value;
+      letterSpacing.value = parseFloat(el.style.letterSpacing)||0;
+      letterSpacingVal.value = letterSpacing.value;
+    }
+
+    function rgbToHex(rgb) {
+      if(!rgb) return "#ffffff";
+      const m = rgb.match(/\d+/g);
+      if(!m) return "#ffffff";
+      return "#" + ((1 << 24) + (parseInt(m[0]) << 16) + (parseInt(m[1]) << 8) + parseInt(m[2])).toString(16).slice(1);
+    }
+
+    // Add initial text
+    createTextBox("Hello World");
+
+    // Dropdown selection
+    textPanelSelect.addEventListener('change', ()=> selectText(textPanelSelect.value));
+
+    // Edit text
+    textEditInput.addEventListener('input', ()=> {
+      const el = getSelectedTextEl();
+      if(el) el.textContent = textEditInput.value;
+      updateTextSelect();
     });
 
-    const lbl = document.createElement('label');
-    lbl.htmlFor = id;
-    lbl.textContent = word;
+    // Delete
+    deleteTextBtn.addEventListener('click', ()=>{
+      const el = getSelectedTextEl();
+      if(el) { el.remove(); texts = texts.filter(tid=>tid!==selectedTextId); selectedTextId=texts[0]||null; updateTextSelect(); selectText(selectedTextId); }
+    });
 
-    row.appendChild(cb);
-    row.appendChild(lbl);
-    highlightContainer.appendChild(row);
-  });
-  updateHighlightedText();
-  selectAllCheckbox.checked = all.every(w => highlightedWords[w]);
-}
+    // Copy
+    copyTextBtn.addEventListener('click', ()=>{
+      const el = getSelectedTextEl();
+      if(el) {
+        const copy = createTextBox(el.textContent);
+        copy.style.left = (parseInt(el.style.left)+10)+"px";
+        copy.style.top = (parseInt(el.style.top)+10)+"px";
+        copy.style.fontSize = el.style.fontSize;
+        copy.style.color = el.style.color;
+        copy.style.fontFamily = el.style.fontFamily;
+        copy.style.fontWeight = el.style.fontWeight;
+        copy.style.fontStyle = el.style.fontStyle;
+        copy.style.textDecoration = el.style.textDecoration;
+        copy.style.lineHeight = el.style.lineHeight;
+        copy.style.letterSpacing = el.style.letterSpacing;
+        selectText(copy.dataset.id);
+      }
+    });
 
-addWordInput.addEventListener("keydown", e => {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    const w = e.target.value.toLowerCase().trim();
-    if (w && !customWords.includes(w)) {
-      customWords.push(w);
-      highlightedWords[w] = true;
+    // Position sliders
+    posX.addEventListener('input', ()=> { 
+      const el = getSelectedTextEl(); if(el){ el.style.left = posX.value+"px"; posXVal.value = posX.value;} 
+    });
+    posY.addEventListener('input', ()=> { 
+      const el = getSelectedTextEl(); if(el){ el.style.top = posY.value+"px"; posYVal.value = posY.value;} 
+    });
+    posXVal.addEventListener('input', ()=> { posX.value = posXVal.value; posX.dispatchEvent(new Event('input')); });
+    posYVal.addEventListener('input', ()=> { posY.value = posYVal.value; posY.dispatchEvent(new Event('input')); });
+
+    // Alignment buttons
+    alignLeft.addEventListener('click', ()=> { const el=getSelectedTextEl(); if(el) el.style.textAlign="left"; });
+    alignCenter.addEventListener('click', ()=> { const el=getSelectedTextEl(); if(el) el.style.textAlign="center"; });
+    alignRight.addEventListener('click', ()=> { const el=getSelectedTextEl(); if(el) el.style.textAlign="right"; });
+    alignTop.addEventListener('click', ()=> { const el=getSelectedTextEl(); if(el) el.style.top="0px"; });
+    alignMiddle.addEventListener('click', ()=> { const el=getSelectedTextEl(); if(el) el.style.top=(canvas.clientHeight/2 - (parseInt(el.offsetHeight)/2))+"px"; });
+    alignBottom.addEventListener('click', ()=> { const el=getSelectedTextEl(); if(el) el.style.top=(canvas.clientHeight-parseInt(getSelectedTextEl().offsetHeight))+"px"; });
+
+    // Font color + opacity
+    fontColorPicker.addEventListener('input', ()=> { const el=getSelectedTextEl(); if(el) el.style.color=fontColorPicker.value; });
+    fontOpacity.addEventListener('input', ()=> { const el=getSelectedTextEl(); if(el) el.style.opacity=(fontOpacity.value/100); });
+
+    // Font size
+    fontSizeSlider.addEventListener('input', ()=> { const el=getSelectedTextEl(); if(el){ el.style.fontSize=fontSizeSlider.value+"px"; fontSizeVal.value=fontSizeSlider.value; }});
+    fontSizeVal.addEventListener('input', ()=> { fontSizeSlider.value=fontSizeVal.value; fontSizeSlider.dispatchEvent(new Event('input')); });
+    fontSizeMinus.addEventListener('click', ()=> { fontSizeSlider.value = Math.max(2,parseInt(fontSizeSlider.value)-1); fontSizeSlider.dispatchEvent(new Event('input')); });
+    fontSizePlus.addEventListener('click', ()=> { fontSizeSlider.value = Math.min(500,parseInt(fontSizeSlider.value)+1); fontSizeSlider.dispatchEvent(new Event('input')); });
+
+    // Font select/upload
+    fontSelect.addEventListener('change', ()=> { const el=getSelectedTextEl(); if(el) el.style.fontFamily=fontSelect.value; });
+    fontUpload.addEventListener('change', e=>{
+      const f=e.target.files[0];
+      if(f){ const url=URL.createObjectURL(f); const font=new FontFace(f.name,url); font.load().then(ff=>{document.fonts.add(ff); const el=getSelectedTextEl(); if(el) el.style.fontFamily=f.name; fontSelect.value=f.name;}); }
+    });
+
+    // Styles
+    boldBtn.addEventListener('click', ()=>{ const el=getSelectedTextEl(); if(el){ el.style.fontWeight=el.style.fontWeight==="bold"?"normal":"bold"; boldBtn.style.background=el.style.fontWeight==="bold"?"#10a37f":"";}});
+    italicBtn.addEventListener('click', ()=>{ const el=getSelectedTextEl(); if(el){ el.style.fontStyle=el.style.fontStyle==="italic"?"normal":"italic"; italicBtn.style.background=el.style.fontStyle==="italic"?"#10a37f":"";}});
+    underlineBtn.addEventListener('click', ()=>{ const el=getSelectedTextEl(); if(el){ if(el.style.textDecoration.includes("underline")) el.style.textDecoration=""; else el.style.textDecoration="underline"; underlineBtn.style.background=el.style.textDecoration.includes("underline")?"#10a37f":"";}});
+    strikeBtn.addEventListener('click', ()=>{ const el=getSelectedTextEl(); if(el){ if(el.style.textDecoration.includes("line-through")) el.style.textDecoration=""; else el.style.textDecoration="line-through"; strikeBtn.style.background=el.style.textDecoration.includes("line-through")?"#10a37f":"";}});
+
+    // Line & letter spacing
+    lineSpacing.addEventListener('input', ()=>{ const el=getSelectedTextEl(); if(el){ el.style.lineHeight=lineSpacing.value; lineSpacingVal.value=lineSpacing.value;}});
+    lineSpacingVal.addEventListener('input', ()=>{ lineSpacing.value=lineSpacingVal.value; lineSpacing.dispatchEvent(new Event('input')); });
+    letterSpacing.addEventListener('input', ()=>{ const el=getSelectedTextEl(); if(el){ el.style.letterSpacing=letterSpacing.value+"px"; letterSpacingVal.value=letterSpacing.value;}});
+    letterSpacingVal.addEventListener('input', ()=>{ letterSpacing.value=letterSpacingVal.value; letterSpacing.dispatchEvent(new Event('input')); });
+
+    /***********************
+      Highlight functions
+    ***********************/
+    function escapeRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+
+    function updateHighlightedText(){
+      canvas.querySelectorAll('.editable-text').forEach(t=>t.innerHTML=t.textContent); // reset
+      texts.forEach(id=>{
+        const el = canvas.querySelector(`.editable-text[data-id="${id}"]`);
+        if(!el) return;
+        let txt = el.textContent;
+        const allOrder = Array.from(new Set([...detectedWords, ...customWords]));
+        allOrder.forEach(w => {
+          if (highlightedWords[w]) {
+            const regex = new RegExp("\\b(" + escapeRegex(w) + ")\\b", "gi");
+            txt = txt.replace(regex, '<span style="font-weight:bold;">$1</span>');
+          }
+        });
+        el.innerHTML = txt.replace(/\n/g, "<br/>");
+      });
+    }
+
+    function updateDetectedWords(){
+      const content = (textInput.value || "").toLowerCase().replace(/[.,!?;:()"]/g,"");
+      const arr = content.split(/\s+/).filter(w => w && !stopWords.includes(w));
+      const freq = {};
+      arr.forEach(w => freq[w] = (freq[w]||0)+1);
+      detectedWords = Object.keys(freq).sort((a,b)=> (freq[b]-freq[a]) || (b.length - a.length)).slice(0,8);
+      detectedWords.forEach(w => { if (!(w in highlightedWords)) highlightedWords[w] = true; });
       renderHighlightWords();
     }
-    e.target.value = "";
-  }
-});
 
-selectAllCheckbox.addEventListener('change', () => {
-  const all = Array.from(new Set([...detectedWords, ...customWords]));
-  all.forEach(w => highlightedWords[w] = selectAllCheckbox.checked);
-  renderHighlightWords();
-});
+    function renderHighlightWords(){
+      highlightContainer.innerHTML = "";
+      const all = Array.from(new Set([...detectedWords, ...customWords]));
+      all.forEach((word, idx) => {
+        const id = 'cb_'+idx+'_'+word.replace(/[^a-z0-9]/gi,'_')+'_'+Math.random().toString(36).slice(2,7);
+        const row = document.createElement('div');
+        row.className = 'highlight-row';
 
-/********************
- Download
-*********************/
-downloadBtn.addEventListener('click', ()=> downloadMenu.style.display = downloadMenu.style.display==='flex'?'none':'flex');
-downloadMenu.querySelectorAll('button').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    const scale = parseInt(btn.dataset.scale);
-    html2canvas(canvas,{scale}).then(canvasOut=>{
-      const link=document.createElement('a');
-      link.download='text_image.png';
-      link.href=canvasOut.toDataURL();
-      link.click();
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.id = id;
+        cb.checked = !!highlightedWords[word];
+        cb.addEventListener('change', () => {
+          highlightedWords[word] = cb.checked;
+          updateHighlightedText();
+          selectAllCheckbox.checked = all.every(w => highlightedWords[w]);
+        });
+
+        const lbl = document.createElement('label');
+        lbl.htmlFor = id;
+        lbl.textContent = word;
+
+        row.appendChild(cb);
+        row.appendChild(lbl);
+        highlightContainer.appendChild(row);
+      });
+      updateHighlightedText();
+      selectAllCheckbox.checked = all.every(w => highlightedWords[w]);
+    }
+
+    textInput.addEventListener('input', () => {
+      updateDetectedWords();
+      updateHighlightedText();
     });
-    downloadMenu.style.display='none';
-  });
-});
 
-/********************
- Helpers
-*********************/
-function rgbToHex(rgb){
-  if(!rgb) return "#ffffff";
-  const res = rgb.match(/\d+/g);
-  if(!res) return "#ffffff";
-  return "#"+((1<<24)+(parseInt(res[0])<<16)+(parseInt(res[1])<<8)+parseInt(res[2])).toString(16).slice(1);
-}
+    addWordInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const w = e.target.value.toLowerCase().trim();
+        if (w && !customWords.includes(w)) {
+          customWords.push(w);
+          highlightedWords[w] = true;
+          renderHighlightWords();
+        }
+        e.target.value = "";
+      }
+    });
 
-/********************
- Initialize
-*********************/
-createTextBox("Hello World");
-updateDetectedWords();
-updateHighlightedText();
+    selectAllCheckbox.addEventListener('change', () => {
+      const all = Array.from(new Set([...detectedWords, ...customWords]));
+      all.forEach(w => highlightedWords[w] = selectAllCheckbox.checked);
+      renderHighlightWords();
+    });
 
-</script>
+    /***********************
+      Overlay
+    ***********************/
+    const overlayUpload = document.getElementById('overlayUpload');
+    const overlaySizeInput = document.getElementById('overlaySize');
+    const overlaySizeVal = document.getElementById('overlaySizeVal');
+
+    overlayUpload.addEventListener('change', e=>{
+      const f=e.target.files[0];
+      if(f){ const r=new FileReader(); r.onload=ev=>{overlay.src=ev.target.result; overlay.style.display='block'; overlay.style.left=overlayX+'px'; overlay.style.top=overlayY+'px'; overlay.width=overlaySizeInput.value; overlay.style.transform=`scale(${currentScale})`;}; r.readAsDataURL(f);}
+    });
+
+    overlaySizeInput.addEventListener('input', ()=>{overlay.width=overlaySizeInput.value; overlaySizeVal.textContent=overlaySizeInput.value+"px";});
+
+    overlay.addEventListener('pointerdown', e=>{dragging=true; startX=e.clientX; startY=e.clientY; startOverlayX=overlayX; startOverlayY=overlayY; overlay.setPointerCapture(e.pointerId);});
+    overlay.addEventListener('pointermove', e=>{ if(!dragging)return; const dx=e.clientX-startX, dy=e.clientY-startY; overlayX=startOverlayX+dx; overlayY=startOverlayY+dy; overlay.style.left=overlayX+'px'; overlay.style.top=overlayY+'px';});
+    overlay.addEventListener('pointerup', e=>{dragging=false; overlay.releasePointerCapture(e.pointerId);});
+
+    overlay.addEventListener('touchstart', e=>{
+      if(e.touches.length===2){
+        e.preventDefault();
+        const dx=e.touches[0].clientX - e.touches[1].clientX;
+        const dy=e.touches[0].clientY - e.touches[1].clientY;
+        startDistance = Math.sqrt(dx*dx+dy*dy);
+        startScale = currentScale;
+      }
+    }, {passive:false});
+
+    overlay.addEventListener('touchmove', e=>{
+      if(e.touches.length===2){
+        e.preventDefault();
+        const dx=e.touches[0].clientX - e.touches[1].clientX;
+        const dy=e.touches[0].clientY - e.touches[1].clientY;
+        const newDist = Math.sqrt(dx*dx+dy*dy);
+        const scale = newDist / startDistance;
+
+        currentScale = Math.max(0.2, Math.min(5, startScale * scale));
+        overlay.style.transform = `scale(${currentScale})`;
+
+        overlaySizeInput.value = Math.round(overlay.width*currentScale);
+        overlaySizeVal.textContent = overlaySizeInput.value+"px";
+      }
+    }, {passive:false});
+
+    /***********************
+      Download
+    ***********************/
+    downloadBtn.addEventListener('click', ()=>downloadMenu.style.display = downloadMenu.style.display==='flex'?'none':'flex');
+    downloadMenu.querySelectorAll('button').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const scale=parseInt(btn.dataset.scale);
+        html2canvas(canvas,{scale}).then(canvasEl=>{
+          const a=document.createElement('a');
+          a.href=canvasEl.toDataURL("image/png");
+          a.download="image.png";
+          a.click();
+        });
+      });
+    });
+
+  </script>
 </body>
 </html>
