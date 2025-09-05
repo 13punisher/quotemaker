@@ -419,6 +419,7 @@ function createTextBox(text="New Text") {
   div.className = 'text-box';
   div.contentEditable = true;
   div.innerText = text;
+  div.dataset.rawText = text; // store plain text separately
   div.style.left = '40px';
   div.style.top = '40px';
   div.style.fontSize = '15px';
@@ -427,6 +428,13 @@ function createTextBox(text="New Text") {
   div.style.lineHeight = '1.4';
   div.style.letterSpacing = '0px';
   canvas.appendChild(div);
+
+  // Live update highlights while typing
+  div.addEventListener('input', e => {
+    div.dataset.rawText = div.innerText; // update raw text
+    updateHighlightedText(div); // update highlights live
+    updateTextSelect();
+  });
 
   div.addEventListener('click', e=>{
     setActiveText(div);
@@ -437,6 +445,7 @@ function createTextBox(text="New Text") {
   updateTextSelect();
   setActiveText(div);
 }
+
 
 function setActiveText(box) {
   if(activeText) activeText.classList.remove('active');
@@ -483,7 +492,14 @@ function updatePanelValues(){
 *********************/
 textSelect.addEventListener('change', ()=> setActiveText(textBoxes[textSelect.value]));
 
-textEdit.addEventListener('input', ()=> { if(activeText) { activeText.innerText=textEdit.value; updateTextSelect(); } });
+textEdit.addEventListener('input', ()=> {
+  if(activeText) {
+    activeText.dataset.rawText = textEdit.value; // update raw text
+    updateHighlightedText(activeText);          // live highlight
+    updateTextSelect();
+  }
+});
+
 
 deleteText.addEventListener('click', ()=>{ 
   if(activeText){ 
@@ -630,9 +646,10 @@ const stopWords = ["the","is","a","an","and","or","in","on","at","of","for","to"
 
 function escapeRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
 
-function updateHighlightedText(){
-  textBoxes.forEach(tb=>{
-    let txt = tb.innerText || "";
+function updateHighlightedText(targetBox=null){
+  const boxes = targetBox ? [targetBox] : textBoxes;
+  boxes.forEach(tb=>{
+    let txt = tb.dataset.rawText || ""; // use raw text
     const allOrder = Array.from(new Set([...detectedWords, ...customWords]));
     allOrder.forEach(w => {
       if (highlightedWords[w]) {
@@ -643,6 +660,7 @@ function updateHighlightedText(){
     tb.innerHTML = txt.replace(/\n/g, "<br/>");
   });
 }
+
 
 function updateDetectedWords(){
   textBoxes.forEach(tb=>{
