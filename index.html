@@ -461,27 +461,23 @@
       Text management
     ***********************/
     function createTextBox(content="New Text") {
-  const div = document.createElement('div');
-  div.className = 'editable-text';
-  div.contentEditable = true;
-  div.textContent = content;
-  div.dataset.id = Date.now() + Math.random();
-  canvas.appendChild(div);
-  
-  // Center horizontally and vertically
-  div.style.left = (canvas.clientWidth/2 - div.offsetWidth/2) + "px";
-  div.style.top = (canvas.clientHeight/2 - div.offsetHeight/2) + "px";
-
-  texts.push(div.dataset.id);
-  updateTextSelect();
-  selectText(div.dataset.id);
-
-  div.addEventListener('click', e => {
-    e.stopPropagation();
-    selectText(div.dataset.id);
-  });
-  return div;
-}
+      const div = document.createElement('div');
+      div.className = 'editable-text';
+      div.contentEditable = true;
+      div.style.left = "50px";
+      div.style.top = "50px";
+      div.textContent = content;
+      div.dataset.id = Date.now() + Math.random();
+      canvas.appendChild(div);
+      texts.push(div.dataset.id);
+      updateTextSelect();
+      selectText(div.dataset.id);
+      div.addEventListener('click', e => {
+        e.stopPropagation();
+        selectText(div.dataset.id);
+      });
+      return div;
+    }
 
     function getSelectedTextEl() { 
       return canvas.querySelector(`.editable-text[data-id="${selectedTextId}"]`);
@@ -557,27 +553,22 @@
 
     // Copy
     copyTextBtn.addEventListener('click', ()=>{
-  const el = getSelectedTextEl();
-  if(el) {
-    const copy = createTextBox(el.textContent);
-    
-    // Center the copied text
-    copy.style.left = (canvas.clientWidth/2 - copy.offsetWidth/2) + "px";
-    copy.style.top = (canvas.clientHeight/2 - copy.offsetHeight/2) + "px";
-
-    // Preserve other styles
-    copy.style.fontSize = el.style.fontSize;
-    copy.style.color = el.style.color;
-    copy.style.fontFamily = el.style.fontFamily;
-    copy.style.fontWeight = el.style.fontWeight;
-    copy.style.fontStyle = el.style.fontStyle;
-    copy.style.textDecoration = el.style.textDecoration;
-    copy.style.lineHeight = el.style.lineHeight;
-    copy.style.letterSpacing = el.style.letterSpacing;
-
-    selectText(copy.dataset.id);
-  }
-});
+      const el = getSelectedTextEl();
+      if(el) {
+        const copy = createTextBox(el.textContent);
+        copy.style.left = (parseInt(el.style.left)+10)+"px";
+        copy.style.top = (parseInt(el.style.top)+10)+"px";
+        copy.style.fontSize = el.style.fontSize;
+        copy.style.color = el.style.color;
+        copy.style.fontFamily = el.style.fontFamily;
+        copy.style.fontWeight = el.style.fontWeight;
+        copy.style.fontStyle = el.style.fontStyle;
+        copy.style.textDecoration = el.style.textDecoration;
+        copy.style.lineHeight = el.style.lineHeight;
+        copy.style.letterSpacing = el.style.letterSpacing;
+        selectText(copy.dataset.id);
+      }
+    });
 
     // Position sliders
     posX.addEventListener('input', ()=> { 
