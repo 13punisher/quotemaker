@@ -247,47 +247,13 @@
   <!-- Settings toolbar -->
   <div class="settings-toolbar">
     <button data-panel="fontColorPanel">Font Color</button>
-    <button data-panel="bgPanel">Background</button>
-    <button data-panel="fontSizePanel">Text Size</button>
-    <button data-panel="lineHeightPanel">Line Spacing</button>
-    <button data-panel="alignPanel">Alignment</button>
     <button data-panel="overlayPanel">Overlay</button>
-    <button data-panel="fontUploadPanel">Font Upload</button>
     <button data-panel="highlightPanel">Highlights</button>
   </div>
 
   <!-- Panels -->
   <div id="fontColorPanel" class="settings-panel">
     <label>Font Color: <input id="fontColor" type="color" value="#ececf1" /></label>
-  </div>
-  <div id="bgPanel" class="settings-panel">
-    <label>Background: <input id="bgColor" type="color" value="#000000" /></label>
-    <label>Background Image: <input id="bgImage" type="file" accept="image/*" /></label>
-  </div>
-  <div id="fontSizePanel" class="settings-panel">
-    <div class="slider-row">
-      <label style="flex:1">Text Size:
-        <input id="fontSize" type="range" min="10" max="100" value="15" />
-      </label>
-      <div id="fontSizeVal" class="slider-value">15px</div>
-    </div>
-  </div>
-  <div id="lineHeightPanel" class="settings-panel">
-    <div class="slider-row">
-      <label style="flex:1">Line Spacing:
-        <input id="lineHeight" type="range" min="1" max="3" step="0.1" value="1.4" />
-      </label>
-      <div id="lineHeightVal" class="slider-value">1.4</div>
-    </div>
-  </div>
-  <div id="alignPanel" class="settings-panel">
-    <label>Alignment:
-      <select id="textAlign">
-        <option value="left">Left</option>
-        <option value="center">Center</option>
-        <option value="right">Right</option>
-      </select>
-    </label>
   </div>
   <div id="overlayPanel" class="settings-panel">
     <label>Upload Overlay Image: <input id="overlayUpload" type="file" accept="image/*" /></label>
@@ -297,9 +263,6 @@
       </label>
       <div id="overlaySizeVal" class="slider-value">200px</div>
     </div>
-  </div>
-  <div id="fontUploadPanel" class="settings-panel">
-    <label>Upload Font from Device: <input id="fontUpload" type="file" accept=".ttf,.otf,.woff,.woff2" /></label>
   </div>
   <div id="highlightPanel" class="settings-panel">
     <div class="highlight-section">
@@ -325,17 +288,9 @@
     const overlay = document.getElementById('overlay');
 
     const fontColorInput = document.getElementById('fontColor');
-    const bgColorInput = document.getElementById('bgColor');
-    const bgImageInput = document.getElementById('bgImage');
-    const fontSizeInput = document.getElementById('fontSize');
-    const fontSizeVal = document.getElementById('fontSizeVal');
-    const lineHeightInput = document.getElementById('lineHeight');
-    const lineHeightVal = document.getElementById('lineHeightVal');
-    const textAlignInput = document.getElementById('textAlign');
     const overlayUpload = document.getElementById('overlayUpload');
     const overlaySizeInput = document.getElementById('overlaySize');
     const overlaySizeVal = document.getElementById('overlaySizeVal');
-    const fontUpload = document.getElementById('fontUpload');
 
     const highlightContainer = document.getElementById('highlightWordsContainer');
     const addWordInput = document.getElementById('addWordInput');
@@ -347,12 +302,10 @@
     let overlayX = 40, overlayY = 40;
     let dragging = false, startX = 0, startY = 0, startOverlayX = 0, startOverlayY = 0;
 
-    // pinch zoom state
     let startDistance = 0;
     let startScale = 1;
     let currentScale = 1;
 
-    // word highlighting state
     let detectedWords = [], customWords = [], highlightedWords = {};
 
     const stopWords = ["the","is","a","an","and","or","in","on","at","of","for","to","with","by","you","your","this","that","it","as","be","are","was","were","from","into","but","if","so","about","can","not","i","me","my","myself","we","our","ours","ourselves","he","him","his","himself","she","her","hers","herself","they","them","their","theirs","themselves","what","which","who","whom","these","those","am","been","being","have","has","had","having","do","does","did","doing","because","until","while","against","between","through","during","before","after","above","below","up","down","out","off","over","under","again","further","then","once","here","there","when","where","why","all","any","both","each","few","more","most","other","some","such","no","nor","only","own","same","than","too","very"];
@@ -464,21 +417,17 @@
     });
 
     fontColorInput.addEventListener('input', ()=> textEl.style.color = fontColorInput.value);
-    bgColorInput.addEventListener('input', ()=> {
-      canvas.style.background = bgColorInput.value;
-      canvas.style.backgroundImage = "";
-    });
-    bgImageInput.addEventListener('change', e=>{
-      const f=e.target.files[0];
-      if(f){ const r=new FileReader(); r.onload = ev => {canvas.style.backgroundImage=`url(${ev.target.result})`; canvas.style.backgroundSize="cover";}; r.readAsDataURL(f);}
-    });
-    fontSizeInput.addEventListener('input', ()=> {textEl.style.fontSize=fontSizeInput.value+"px"; fontSizeVal.textContent=fontSizeInput.value+"px";});
-    lineHeightInput.addEventListener('input', ()=> {textEl.style.lineHeight=lineHeightInput.value; lineHeightVal.textContent=lineHeightInput.value;});
-    textAlignInput.addEventListener('change', ()=> textEl.style.textAlign=textAlignInput.value);
 
     overlayUpload.addEventListener('change', e=>{
       const f=e.target.files[0];
-      if(f){ const r=new FileReader(); r.onload=ev=>{overlay.src=ev.target.result; overlay.style.display='block'; overlay.style.left=overlayX+'px'; overlay.style.top=overlayY+'px'; overlay.width=overlaySizeInput.value; overlay.style.transform=`scale(${currentScale})`;}; r.readAsDataURL(f);}
+      if(f){ const r=new FileReader(); r.onload=ev=>{
+        overlay.src=ev.target.result;
+        overlay.style.display='block';
+        overlay.style.left=overlayX+'px';
+        overlay.style.top=overlayY+'px';
+        overlay.width=overlaySizeInput.value;
+        overlay.style.transform=`scale(${currentScale})`;
+      }; r.readAsDataURL(f);}
     });
     overlaySizeInput.addEventListener('input', ()=>{overlay.width=overlaySizeInput.value; overlaySizeVal.textContent=overlaySizeInput.value+"px";});
 
@@ -486,7 +435,6 @@
     overlay.addEventListener('pointermove', e=>{ if(!dragging)return; const dx=e.clientX-startX, dy=e.clientY-startY; overlayX=startOverlayX+dx; overlayY=startOverlayY+dy; overlay.style.left=overlayX+'px'; overlay.style.top=overlayY+'px';});
     overlay.addEventListener('pointerup', e=>{dragging=false; overlay.releasePointerCapture(e.pointerId);});
 
-    // pinch zoom
     overlay.addEventListener('touchstart', e=>{
       if(e.touches.length===2){
         e.preventDefault();
@@ -512,11 +460,6 @@
         overlaySizeVal.textContent = overlaySizeInput.value + "px";
       }
     }, {passive:false});
-
-    fontUpload.addEventListener('change', e=>{
-      const f=e.target.files[0];
-      if(f){ const url=URL.createObjectURL(f); const font=new FontFace(f.name,url); font.load().then(ff=>{document.fonts.add(ff); textEl.style.fontFamily=f.name;}); }
-    });
 
     downloadBtn.addEventListener('click', ()=> downloadMenu.style.display = downloadMenu.style.display==='flex'?'none':'flex');
     downloadMenu.querySelectorAll('button').forEach(btn=>{
