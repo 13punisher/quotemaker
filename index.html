@@ -54,7 +54,7 @@
       text-align:left; 
     }
 
-    .bottom-spacer { height:120px; } /* increased space to avoid overlap */
+    .bottom-spacer { height:32px; }
 
     /* Download button (top right) */
     .download-container {
@@ -346,7 +346,11 @@
 
     let overlayX = 40, overlayY = 40;
     let dragging = false, startX = 0, startY = 0, startOverlayX = 0, startOverlayY = 0;
-    let startDistance = 0, startWidth = 0;
+
+    // pinch zoom state
+    let startDistance = 0;
+    let startScale = 1;
+    let currentScale = 1;
 
     // word highlighting state
     let detectedWords = [], customWords = [], highlightedWords = {};
@@ -474,47 +478,40 @@
 
     overlayUpload.addEventListener('change', e=>{
       const f=e.target.files[0];
-      if(f){ const r=new FileReader(); r.onload=ev=>{overlay.src=ev.target.result; overlay.style.display='block'; overlay.width=overlaySizeInput.value; overlay.style.left=overlayX+'px'; overlay.style.top=overlayY+'px';}; r.readAsDataURL(f);}
+      if(f){ const r=new FileReader(); r.onload=ev=>{overlay.src=ev.target.result; overlay.style.display='block'; overlay.style.left=overlayX+'px'; overlay.style.top=overlayY+'px'; overlay.width=overlaySizeInput.value; overlay.style.transform=`scale(${currentScale})`;}; r.readAsDataURL(f);}
     });
     overlaySizeInput.addEventListener('input', ()=>{overlay.width=overlaySizeInput.value; overlaySizeVal.textContent=overlaySizeInput.value+"px";});
 
-    // Dragging
     overlay.addEventListener('pointerdown', e=>{dragging=true; startX=e.clientX; startY=e.clientY; startOverlayX=overlayX; startOverlayY=overlayY; overlay.setPointerCapture(e.pointerId);});
     overlay.addEventListener('pointermove', e=>{ if(!dragging)return; const dx=e.clientX-startX, dy=e.clientY-startY; overlayX=startOverlayX+dx; overlayY=startOverlayY+dy; overlay.style.left=overlayX+'px'; overlay.style.top=overlayY+'px';});
     overlay.addEventListener('pointerup', e=>{dragging=false; overlay.releasePointerCapture(e.pointerId);});
 
-    // Pinch zoom (resize with fingers)
-    let startDistance = 0;
-let startScale = 1;
-let currentScale = 1;
+    // pinch zoom
+    overlay.addEventListener('touchstart', e=>{
+      if(e.touches.length===2){
+        e.preventDefault();
+        const dx=e.touches[0].clientX - e.touches[1].clientX;
+        const dy=e.touches[0].clientY - e.touches[1].clientY;
+        startDistance = Math.sqrt(dx*dx+dy*dy);
+        startScale = currentScale;
+      }
+    }, {passive:false});
 
-overlay.addEventListener('touchstart', e=>{
-  if(e.touches.length===2){
-    e.preventDefault();
-    const dx=e.touches[0].clientX - e.touches[1].clientX;
-    const dy=e.touches[0].clientY - e.touches[1].clientY;
-    startDistance = Math.sqrt(dx*dx+dy*dy);
-    startScale = currentScale; // save last scale
-  }
-}, {passive:false});
+    overlay.addEventListener('touchmove', e=>{
+      if(e.touches.length===2){
+        e.preventDefault();
+        const dx=e.touches[0].clientX - e.touches[1].clientX;
+        const dy=e.touches[0].clientY - e.touches[1].clientY;
+        const newDist = Math.sqrt(dx*dx+dy*dy);
+        const scale = newDist / startDistance;
 
-overlay.addEventListener('touchmove', e=>{
-  if(e.touches.length===2){
-    e.preventDefault();
-    const dx=e.touches[0].clientX - e.touches[1].clientX;
-    const dy=e.touches[0].clientY - e.touches[1].clientY;
-    const newDist = Math.sqrt(dx*dx+dy*dy);
-    const scale = newDist / startDistance;
+        currentScale = Math.max(0.2, Math.min(5, startScale * scale));
+        overlay.style.transform = `scale(${currentScale})`;
 
-    currentScale = Math.max(0.2, Math.min(5, startScale * scale)); // clamp scale
-    overlay.style.transform = `scale(${currentScale})`;
-
-    // update slider for consistency
-    overlaySizeInput.value = Math.round(overlay.naturalWidth * currentScale);
-    overlaySizeVal.textContent = overlaySizeInput.value + "px";
-  }
-}, {passive:false});
-
+        overlaySizeInput.value = Math.round(overlay.naturalWidth * currentScale);
+        overlaySizeVal.textContent = overlaySizeInput.value + "px";
+      }
+    }, {passive:false});
 
     fontUpload.addEventListener('change', e=>{
       const f=e.target.files[0];
