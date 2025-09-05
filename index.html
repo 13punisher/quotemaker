@@ -22,7 +22,7 @@
       position:relative; overflow:hidden;
       /* no border-radius -> sharp corners */
     }
-    .editable-text { max-width:85%; word-wrap:break-word; white-space:pre-wrap; color:#ececf1; font-size:45px; line-height:1.4; text-align:left; }
+    .editable-text { max-width:85%; word-wrap:break-word; white-space:pre-wrap; color:#ececf1; font-size:15px; line-height:1.4; text-align:left; }
 
     .bottom-spacer { height:32px; }
 
@@ -102,7 +102,7 @@
 
           <div class="slider-row">
             <label style="flex:1">Text Size:
-              <input id="fontSize" type="range" min="20" max="100" value="45" />
+              <input id="fontSize" type="range" min="0" max="100" value="15" />
             </label>
             <div id="fontSizeVal" class="slider-value">45px</div>
           </div>
@@ -276,17 +276,20 @@
     });
 
     // Add custom word (Enter)
-    addWordInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        const w = (e.target.value || "").toLowerCase().trim();
-        if (w && !customWords.includes(w)) {
-          customWords.push(w);
-          highlightedWords[w] = true;
-          renderHighlightWords();
-        }
-        e.target.value = '';
-      }
-    });
+    addWordInput.addEventListener("keydown", e => {
+  if (e.key === "Enter") {
+    e.preventDefault(); // stop textarea form-like behavior
+    const w = e.target.value.toLowerCase().trim();
+    if (w && !customWords.includes(w)) {
+      customWords.push(w);
+      highlightedWords[w] = true;
+      renderHighlightWords();   // re-render checkboxes
+      updateHighlightedText();  // refresh preview
+      e.target.value = "";      // clear input
+    }
+  }
+});
+
 
     // Select all toggle
     selectAllCheckbox.addEventListener('change', () => {
