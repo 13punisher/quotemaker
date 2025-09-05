@@ -3,9 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-  <title>Text Image Generator</title>
+  <title>Text Image Generator with Highlights</title>
 
-  <!-- html2canvas for screenshot -->
   <script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
   <style>
@@ -20,7 +19,7 @@
       flex-direction: column;
       align-items: center;
       padding: 12px;
-      padding-bottom: 180px;
+      padding-bottom: 220px;
     }
     .image-canvas {
       aspect-ratio: 9 / 16;
@@ -116,6 +115,13 @@
       width: 100%;
     }
 
+    .highlight-section {
+      border-top: 1px solid rgba(255,255,255,0.2);
+      padding-top: 8px;
+    }
+    .highlight-row { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+    .add-word-input { width:100%; padding:6px; border-radius:6px; border:none; outline:none; }
+
     @media (max-width: 600px) {
       .chat-input-bar {
         flex-direction: column;
@@ -151,6 +157,16 @@
           </label>
           <label>Upload Overlay Image:<input type="file" id="overlayUpload" accept="image/*" /></label>
           <label>Overlay Size:<input type="range" id="overlaySize" min="50" max="1000" value="200" /></label>
+
+          <div class="highlight-section">
+            <strong>Highlight Words</strong>
+            <div>
+              <input type="checkbox" id="selectAllWords"> <label for="selectAllWords">Select All / Unselect All</label>
+            </div>
+            <div id="highlightWordsContainer"></div>
+            <input class="add-word-input" type="text" id="addWordInput" placeholder="Add custom word and press Enter" />
+          </div>
+
         </div>
       </div>
       <textarea id="textInput" class="chat-textarea" placeholder="Type your text here"></textarea>
@@ -170,89 +186,132 @@
     const textInput = document.getElementById("textInput");
     const canvas = document.getElementById("canvas");
     const overlay = document.getElementById("overlay");
+    const settingsBtn = document.getElementById("settingsBtn");
+    const settingsPanel = document.getElementById("settingsPanel");
+    const highlightContainer = document.getElementById("highlightWordsContainer");
+    const addWordInput = document.getElementById("addWordInput");
+    const selectAllCheckbox = document.getElementById("selectAllWords");
 
     let overlayX = 100, overlayY = 200, dragging = false;
+    let detectedWords = [], customWords = [], highlightedWords = {}, allSelected = true;
 
-    // Text update
-    textInput.addEventListener("input", () => {
-      textEl.innerText = textInput.value;
+    const stopWords = ["the","is","a","an","and","or","in","on","at","of","for","to","with","by","you","your","this","that","it","as","be","are","was","were","from","into","but","if","so","about","can","not","i","me","my","myself","we","our","ours","ourselves","he","him","his","himself","she","her","hers","herself","they","them","their","theirs","themselves","what","which","who","whom","these","those","am","been","being","have","has","had","having","do","does","did","doing","because","until","while","against","between","through","during","before","after","above","below","up","down","out","off","over","under","again","further","then","once","here","there","when","where","why","all","any","both","each","few","more","most","other","some","such","no","nor","only","own","same","than","too","very"];
+
+    // Update highlighted text
+    function updateHighlightedText() {
+      let text = textInput.value;
+      let allWords = [...detectedWords, ...customWords];
+      allWords.forEach(word => {
+        if (highlightedWords[word]) {
+          let regex = new RegExp(`\\b(${word})\\b`, "gi");
+          text = text.replace(regex, '<span style="font-weight:bold;">$1</span>');
+        }
+      });
+      textEl.innerHTML = text.replace(/\n/g,"<br/>");
+    }
+
+    function updateDetectedWords() {
+      const words = textInput.value.toLowerCase().replace(/[.,!?;:()"]/g,"").split(/\s+/).filter(w => w && !stopWords.includes(w));
+      const freq = {};
+      words.forEach(w => { freq[w] = (freq[w] || 0)+1; });
+      detectedWords = Object.keys(freq).sort((a,b)=>freq[b]-freq[a] || b.length - a.length).slice(0,8);
+      detectedWords.forEach(w => { if (!(w in highlightedWords)) highlightedWords[w] = true; });
+      renderHighlightWords();
+    }
+
+    function renderHighlightWords() {
+      highlightContainer.innerHTML = "";
+      const allWords = [...detectedWords, ...customWords];
+      allWords.forEach(word=>{
+        const div = document.createElement("div");
+        div.className="highlight-row";
+        const cb = document.createElement("input");
+        cb.type="checkbox";
+        cb.checked = !!highlightedWords[word];
+        cb.onchange = () => { highlightedWords[word] = cb.checked; updateHighlightedText(); };
+        const lbl = document.createElement("label");
+        lbl.innerText = word;
+        div.appendChild(cb);
+        div.appendChild(lbl);
+        highlightContainer.appendChild(div);
+      });
+      updateHighlightedText();
+      selectAllCheckbox.checked = allWords.every(w=>highlightedWords[w]);
+    }
+
+    textInput.addEventListener("input", ()=>{
+      updateDetectedWords();
+      updateHighlightedText();
     });
 
-    // Settings
-    document.getElementById("settingsBtn").onclick = () => {
-      const panel = document.getElementById("settingsPanel");
-      panel.style.display = panel.style.display === "none" ? "flex" : "none";
-    };
-
-    document.getElementById("fontColor").oninput = e => {
-      textEl.style.color = e.target.value;
-    };
-    document.getElementById("bgColor").oninput = e => {
-      canvas.style.background = e.target.value;
-    };
-    document.getElementById("bgImage").onchange = e => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ev => canvas.style.background = `url(${ev.target.result}) center/cover no-repeat`;
-      reader.readAsDataURL(file);
-    };
-    document.getElementById("fontSize").oninput = e => {
-      textEl.style.fontSize = e.target.value + "px";
-    };
-    document.getElementById("lineHeight").oninput = e => {
-      textEl.style.lineHeight = e.target.value;
-    };
-    document.getElementById("textAlign").oninput = e => {
-      textEl.style.textAlign = e.target.value;
-    };
-
-    // Overlay
-    document.getElementById("overlayUpload").onchange = e => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ev => {
-        overlay.src = ev.target.result;
-        overlay.style.display = "block";
-        overlay.style.top = overlayY + "px";
-        overlay.style.left = overlayX + "px";
-        overlay.style.width = document.getElementById("overlaySize").value + "px";
-      };
-      reader.readAsDataURL(file);
-    };
-    document.getElementById("overlaySize").oninput = e => {
-      overlay.style.width = e.target.value + "px";
-    };
-
-    overlay.addEventListener("mousedown", () => { dragging = true; });
-    window.addEventListener("mouseup", () => { dragging = false; });
-    window.addEventListener("mousemove", e => {
-      if (dragging) {
-        overlayX += e.movementX;
-        overlayY += e.movementY;
-        overlay.style.left = overlayX + "px";
-        overlay.style.top = overlayY + "px";
+    addWordInput.addEventListener("keydown", e=>{
+      if(e.key==="Enter"){
+        const w = e.target.value.toLowerCase().trim();
+        if(w && !customWords.includes(w)){
+          customWords.push(w);
+          highlightedWords[w]=true;
+          renderHighlightWords();
+          e.target.value="";
+        }
       }
     });
 
-    // Download
-    document.getElementById("downloadBtn").onclick = () => {
-      const menu = document.getElementById("downloadMenu");
-      menu.style.display = menu.style.display === "none" ? "flex" : "none";
+    selectAllCheckbox.addEventListener("change", ()=>{
+      const allWords = [...detectedWords, ...customWords];
+      allWords.forEach(w=>highlightedWords[w]=selectAllCheckbox.checked);
+      renderHighlightWords();
+    });
+
+    // Settings
+    settingsBtn.onclick = ()=>{ settingsPanel.style.display = settingsPanel.style.display==="none"?"flex":"none"; };
+    document.getElementById("fontColor").oninput = e=>textEl.style.color = e.target.value;
+    document.getElementById("bgColor").oninput = e=>canvas.style.background=e.target.value;
+    document.getElementById("bgImage").onchange = e=>{
+      const file = e.target.files[0]; if(!file) return;
+      const reader = new FileReader();
+      reader.onload=ev=>canvas.style.background=`url(${ev.target.result}) center/cover no-repeat`;
+      reader.readAsDataURL(file);
     };
-    document.querySelectorAll("#downloadMenu button").forEach(btn => {
-      btn.onclick = () => {
-        const scale = parseInt(btn.dataset.scale);
-        html2canvas(canvas, { scale }).then(c => {
-          const link = document.createElement("a");
-          link.download = `image-${btn.dataset.quality}.png`;
-          link.href = c.toDataURL();
+    document.getElementById("fontSize").oninput=e=>textEl.style.fontSize=e.target.value+"px";
+    document.getElementById("lineHeight").oninput=e=>textEl.style.lineHeight=e.target.value;
+    document.getElementById("textAlign").oninput=e=>textEl.style.textAlign=e.target.value;
+
+    // Overlay
+    document.getElementById("overlayUpload").onchange = e=>{
+      const file = e.target.files[0]; if(!file) return;
+      const reader = new FileReader();
+      reader.onload=ev=>{
+        overlay.src = ev.target.result; overlay.style.display="block";
+        overlay.style.top = overlayY+"px"; overlay.style.left = overlayX+"px";
+        overlay.style.width = document.getElementById("overlaySize").value+"px";
+      };
+      reader.readAsDataURL(file);
+    };
+    document.getElementById("overlaySize").oninput = e=>overlay.style.width=e.target.value+"px";
+
+    overlay.addEventListener("mousedown", ()=>{ dragging=true; });
+    window.addEventListener("mouseup", ()=>{ dragging=false; });
+    window.addEventListener("mousemove", e=>{
+      if(dragging){ overlayX+=e.movementX; overlayY+=e.movementY; overlay.style.left=overlayX+"px"; overlay.style.top=overlayY+"px"; }
+    });
+
+    // Download
+    const downloadBtn=document.getElementById("downloadBtn");
+    const downloadMenu=document.getElementById("downloadMenu");
+    downloadBtn.onclick=()=>{ downloadMenu.style.display = downloadMenu.style.display==="none"?"flex":"none"; };
+    document.querySelectorAll("#downloadMenu button").forEach(btn=>{
+      btn.onclick=()=>{
+        const scale=parseInt(btn.dataset.scale);
+        html2canvas(canvas,{scale}).then(c=>{
+          const link=document.createElement("a");
+          link.download=`image-${btn.dataset.quality}.png`;
+          link.href=c.toDataURL();
           link.click();
         });
-        document.getElementById("downloadMenu").style.display = "none";
+        downloadMenu.style.display="none";
       };
     });
+
   </script>
 </body>
 </html>
