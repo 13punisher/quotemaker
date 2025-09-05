@@ -52,9 +52,17 @@ body {
   outline:none;
   padding:2px 4px;
   border-radius:4px;
+  user-select: text;
 }
 .text-box.active {
   outline:2px dashed var(--accent);
+}
+#overlay {
+  position:absolute; 
+  display:none; 
+  left:0; top:0;
+  touch-action:none;
+  user-select:none;
 }
 
 /* Bottom spacer */
@@ -159,7 +167,7 @@ body {
   display:flex; 
   align-items:center; 
   gap:8px; 
-  margin-bottom:10px;
+  margin-bottom:10px; 
 }
 .slider-value { 
   font-size:13px; 
@@ -205,7 +213,9 @@ body {
 </head>
 <body>
 <div class="app">
-  <div id="canvas" class="image-canvas" aria-label="preview canvas"></div>
+  <div id="canvas" class="image-canvas" aria-label="preview canvas">
+    <img id="overlay">
+  </div>
   <div class="bottom-spacer"></div>
 </div>
 
@@ -419,7 +429,6 @@ function createTextBox(text="New Text") {
   div.className = 'text-box';
   div.contentEditable = true;
   div.innerText = text;
-  div.dataset.rawText = text; // store plain text separately
   div.style.left = '40px';
   div.style.top = '40px';
   div.style.fontSize = '15px';
@@ -429,16 +438,32 @@ function createTextBox(text="New Text") {
   div.style.letterSpacing = '0px';
   canvas.appendChild(div);
 
-  // Live update highlights while typing
-  div.addEventListener('input', e => {
-    div.dataset.rawText = div.innerText; // update raw text
-    updateHighlightedText(div); // update highlights live
-    updateTextSelect();
-  });
-
   div.addEventListener('click', e=>{
     setActiveText(div);
     e.stopPropagation();
+  });
+
+  // Drag support
+  let dragging=false, startX=0, startY=0, startLeft=0, startTop=0;
+  div.addEventListener('pointerdown', e=>{
+    dragging=true;
+    startX=e.clientX;
+    startY=e.clientY;
+    startLeft=parseFloat(div.style.left);
+    startTop=parseFloat(div.style.top);
+    div.setPointerCapture(e.pointerId);
+    setActiveText(div);
+    e.stopPropagation();
+  });
+  div.addEventListener('pointermove', e=>{
+    if(!dragging) return;
+    div.style.left=(startLeft+e.clientX-startX)+'px';
+    div.style.top=(startTop+e.clientY-startY)+'px';
+    updatePanelValues();
+  });
+  div.addEventListener('pointerup', e=>{
+    dragging=false;
+    div.releasePointerCapture(e.pointerId);
   });
 
   textBoxes.push(div);
@@ -446,8 +471,9 @@ function createTextBox(text="New Text") {
   setActiveText(div);
 }
 
+// --- Rest of JS remains mostly same but fixes applied for px parsing, highlights, font upload, etc ---
 
-function setActiveText(box) {
+  function setActiveText(box) {
   if(activeText) activeText.classList.remove('active');
   activeText = box;
   if(activeText) activeText.classList.add('active');
@@ -483,23 +509,18 @@ function updatePanelValues(){
   letterSpacingVal.textContent = letterSpacing.value;
   styleButtons.forEach(btn=>{
     const s = btn.dataset.style;
-    btn.classList.toggle('active', activeText.style.fontWeight===s || activeText.style.fontStyle===s || activeText.style.textDecoration===s);
+    btn.classList.toggle('active', 
+      (s==='bold' && activeText.style.fontWeight==='bold') ||
+      (s==='italic' && activeText.style.fontStyle==='italic') ||
+      (s==='underline' && activeText.style.textDecoration.includes('underline')) ||
+      (s==='line-through' && activeText.style.textDecoration.includes('line-through'))
+    );
   });
 }
 
-/********************
- Text Panel Events
-*********************/
+// Text Panel Events
 textSelect.addEventListener('change', ()=> setActiveText(textBoxes[textSelect.value]));
-
-textEdit.addEventListener('input', ()=> {
-  if(activeText) {
-    activeText.dataset.rawText = textEdit.value; // update raw text
-    updateHighlightedText(activeText);          // live highlight
-    updateTextSelect();
-  }
-});
-
+textEdit.addEventListener('input', ()=> { if(activeText) { activeText.innerText=textEdit.value; updateTextSelect(); updateDetectedWords(); } });
 
 deleteText.addEventListener('click', ()=>{ 
   if(activeText){ 
@@ -517,31 +538,26 @@ copyText.addEventListener('click', ()=>{
     const box = textBoxes[textBoxes.length-1];
     box.style.left = (parseInt(activeText.style.left)+10)+'px';
     box.style.top = (parseInt(activeText.style.top)+10)+'px';
-    box.style.fontSize = activeText.style.fontSize;
-    box.style.fontFamily = activeText.style.fontFamily;
-    box.style.color = activeText.style.color;
-    box.style.fontWeight = activeText.style.fontWeight;
-    box.style.fontStyle = activeText.style.fontStyle;
-    box.style.textDecoration = activeText.style.textDecoration;
-    box.style.lineHeight = activeText.style.lineHeight;
-    box.style.letterSpacing = activeText.style.letterSpacing;
+    ['fontSize','fontFamily','color','fontWeight','fontStyle','textDecoration','lineHeight','letterSpacing'].forEach(prop=>{
+      box.style[prop] = activeText.style[prop];
+    });
     setActiveText(box);
   }
 });
 
 posX.addEventListener('input', ()=>{ if(activeText){ activeText.style.left = posX.value+'px'; posXVal.textContent = posX.value; } });
 posY.addEventListener('input', ()=>{ if(activeText){ activeText.style.top = posY.value+'px'; posYVal.textContent = posY.value; } });
-
 fontColorPicker.addEventListener('input', ()=>{ if(activeText) activeText.style.color=fontColorPicker.value; });
 fontOpacity.addEventListener('input', ()=>{ if(activeText) activeText.style.opacity=(fontOpacity.value/100); });
 fontSizeSlider.addEventListener('input', ()=>{ if(activeText){ activeText.style.fontSize=fontSizeSlider.value+'px'; fontSizeVal.textContent=fontSizeSlider.value+'px'; } });
 fontSelect.addEventListener('change', ()=>{ if(activeText) activeText.style.fontFamily=fontSelect.value; });
+
 fontUpload.addEventListener('change', e=>{
   const f=e.target.files[0];
   if(f && activeText){
     const url=URL.createObjectURL(f); 
-    const font=new FontFace(f.name,url); 
-    font.load().then(ff=>{document.fonts.add(ff); activeText.style.fontFamily=f.name; fontSelect.value=f.name;});
+    const font=new FontFace(f.name.replace(/\s+/g,'_'),url); 
+    font.load().then(ff=>{document.fonts.add(ff); activeText.style.fontFamily=f.name.replace(/\s+/g,'_'); fontSelect.value=activeText.style.fontFamily;});
   }
 });
 
@@ -551,28 +567,35 @@ styleButtons.forEach(btn=>{
     const s = btn.dataset.style;
     if(s==='bold') activeText.style.fontWeight = (activeText.style.fontWeight==='bold')?'normal':'bold';
     if(s==='italic') activeText.style.fontStyle = (activeText.style.fontStyle==='italic')?'normal':'italic';
-    if(s==='underline') activeText.style.textDecoration = (activeText.style.textDecoration==='underline')?'none':'underline';
-    if(s==='line-through') activeText.style.textDecoration = (activeText.style.textDecoration==='line-through')?'none':'line-through';
+    if(s==='underline') activeText.style.textDecoration = (activeText.style.textDecoration.includes('underline'))?'none':'underline';
+    if(s==='line-through') activeText.style.textDecoration = (activeText.style.textDecoration.includes('line-through'))?'none':'line-through';
     btn.classList.toggle('active');
   });
 });
 
 alignButtons.forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    if(!activeText) return;
-    const a = btn.dataset.alignText;
-    activeText.style.textAlign = a;
-  });
+  btn.addEventListener('click', ()=>{ if(!activeText) return; activeText.style.textAlign = btn.dataset.alignText; });
 });
 
 lineSpacing.addEventListener('input', ()=>{ if(activeText){ activeText.style.lineHeight=lineSpacing.value; lineSpacingVal.textContent=lineSpacing.value; } });
 lineButtons.forEach(btn=>{
-  btn.addEventListener('click', ()=>{ if(!activeText) return; activeText.style.lineHeight=(parseFloat(activeText.style.lineHeight)+parseFloat(btn.dataset.line)).toFixed(2); lineSpacing.value=activeText.style.lineHeight; lineSpacingVal.textContent=lineSpacing.value; });
+  btn.addEventListener('click', ()=>{ 
+    if(!activeText) return; 
+    activeText.style.lineHeight=(parseFloat(activeText.style.lineHeight)+parseFloat(btn.dataset.line)).toFixed(2); 
+    lineSpacing.value = parseFloat(activeText.style.lineHeight); 
+    lineSpacingVal.textContent=lineSpacing.value; 
+  });
 });
 
 letterSpacing.addEventListener('input', ()=>{ if(activeText){ activeText.style.letterSpacing=letterSpacing.value+'px'; letterSpacingVal.textContent=letterSpacing.value; } });
 letterButtons.forEach(btn=>{
-  btn.addEventListener('click', ()=>{ if(!activeText) return; activeText.style.letterSpacing=(parseFloat(activeText.style.letterSpacing)+parseFloat(btn.dataset.letter)).toFixed(1)+'px'; letterSpacing.value=parseFloat(activeText.style.letterSpacing); letterSpacingVal.textContent=letterSpacing.value; });
+  btn.addEventListener('click', ()=>{
+    if(!activeText) return; 
+    let newLetter = (parseFloat(activeText.style.letterSpacing)+parseFloat(btn.dataset.letter)).toFixed(1);
+    activeText.style.letterSpacing=newLetter+'px'; 
+    letterSpacing.value=parseFloat(newLetter); 
+    letterSpacingVal.textContent=letterSpacing.value;
+  });
 });
 
 moveButtons.forEach(btn=>{
@@ -590,10 +613,13 @@ alignRelButtons.forEach(btn=>{
     if(!activeText) return;
     const a = btn.dataset.align;
     if(a==='top') activeText.style.top='0px';
-    if(a==='bottom') activeText.style.top=(canvas.clientHeight-parseInt(activeText.offsetHeight))+'px';
+    if(a==='bottom') activeText.style.top=(canvas.clientHeight-activeText.offsetHeight)+'px';
     if(a==='left') activeText.style.left='0px';
-    if(a==='right') activeText.style.left=(canvas.clientWidth-parseInt(activeText.offsetWidth))+'px';
-    if(a==='center'){ activeText.style.left=((canvas.clientWidth-activeText.offsetWidth)/2)+'px'; activeText.style.top=((canvas.clientHeight-activeText.offsetHeight)/2)+'px'; }
+    if(a==='right') activeText.style.left=(canvas.clientWidth-activeText.offsetWidth)+'px';
+    if(a==='center'){
+      activeText.style.left=((canvas.clientWidth-activeText.offsetWidth)/2)+'px';
+      activeText.style.top=((canvas.clientHeight-activeText.offsetHeight)/2)+'px';
+    }
     updatePanelValues();
   });
 });
@@ -606,13 +632,35 @@ let startDistance=0, startScale=1, currentScale=1;
 
 overlayUpload.addEventListener('change', e=>{
   const f=e.target.files[0];
-  if(f){ const r=new FileReader(); r.onload=ev=>{overlay.src=ev.target.result; overlay.style.display='block'; overlay.style.left=overlayX+'px'; overlay.style.top=overlayY+'px'; overlay.width=overlaySizeInput.value; overlay.style.transform=`scale(${currentScale})`;}; r.readAsDataURL(f);}
+  if(f){ 
+    const r=new FileReader(); 
+    r.onload=ev=>{
+      overlay.src=ev.target.result; 
+      overlay.style.display='block'; 
+      overlay.style.left=overlayX+'px'; 
+      overlay.style.top=overlayY+'px'; 
+      overlay.width=overlaySizeInput.value; 
+      overlay.style.transform=`scale(${currentScale})`;
+    }; 
+    r.readAsDataURL(f);
+  }
 });
-overlaySizeInput.addEventListener('input', ()=>{overlay.width=overlaySizeInput.value; overlaySizeVal.textContent=overlaySizeInput.value+"px";});
+overlaySizeInput.addEventListener('input', ()=>{
+  overlay.width=overlaySizeInput.value; 
+  overlaySizeVal.textContent=overlaySizeInput.value+"px";
+});
 
-overlay.addEventListener('pointerdown', e=>{dragging=true; startX=e.clientX; startY=e.clientY; startOverlayX=overlayX; startOverlayY=overlayY; overlay.setPointerCapture(e.pointerId);});
-overlay.addEventListener('pointermove', e=>{ if(!dragging)return; const dx=e.clientX-startX, dy=e.clientY-startY; overlayX=startOverlayX+dx; overlayY=startOverlayY+dy; overlay.style.left=overlayX+'px'; overlay.style.top=overlayY+'px';});
-overlay.addEventListener('pointerup', e=>{dragging=false; overlay.releasePointerCapture(e.pointerId);});
+overlay.addEventListener('pointerdown', e=>{
+  dragging=true; startX=e.clientX; startY=e.clientY; startOverlayX=overlayX; startOverlayY=overlayY; overlay.setPointerCapture(e.pointerId);
+});
+overlay.addEventListener('pointermove', e=>{
+  if(!dragging) return; 
+  const dx=e.clientX-startX, dy=e.clientY-startY; 
+  overlayX=startOverlayX+dx; 
+  overlayY=startOverlayY+dy; 
+  overlay.style.left=overlayX+'px'; overlay.style.top=overlayY+'px';
+});
+overlay.addEventListener('pointerup', e=>{ dragging=false; overlay.releasePointerCapture(e.pointerId); });
 
 // pinch zoom
 overlay.addEventListener('touchstart', e=>{
@@ -646,10 +694,9 @@ const stopWords = ["the","is","a","an","and","or","in","on","at","of","for","to"
 
 function escapeRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
 
-function updateHighlightedText(targetBox=null){
-  const boxes = targetBox ? [targetBox] : textBoxes;
-  boxes.forEach(tb=>{
-    let txt = tb.dataset.rawText || ""; // use raw text
+function updateHighlightedText(){
+  textBoxes.forEach(tb=>{
+    let txt = tb.innerText || "";
     const allOrder = Array.from(new Set([...detectedWords, ...customWords]));
     allOrder.forEach(w => {
       if (highlightedWords[w]) {
@@ -660,7 +707,6 @@ function updateHighlightedText(targetBox=null){
     tb.innerHTML = txt.replace(/\n/g, "<br/>");
   });
 }
-
 
 function updateDetectedWords(){
   textBoxes.forEach(tb=>{
@@ -756,6 +802,4 @@ function rgbToHex(rgb){
 createTextBox("Hello World");
 updateDetectedWords();
 updateHighlightedText();
-</script>
-</body>
-</html>
+
