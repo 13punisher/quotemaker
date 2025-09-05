@@ -45,6 +45,7 @@
       overflow:hidden;
     }
     .editable-text { 
+      position:absolute;
       max-width:85%; 
       word-wrap:break-word; 
       white-space:pre-wrap; 
@@ -52,6 +53,11 @@
       font-size:15px; 
       line-height:1.4; 
       text-align:left; 
+      cursor:text;
+      padding:2px 4px;
+    }
+    .editable-text.selected { 
+      outline: 2px solid var(--accent); 
     }
 
     .bottom-spacer { height:32px; }
@@ -155,7 +161,7 @@
       border-radius:16px;
       padding:16px;
       box-shadow:0 6px 18px rgba(0,0,0,.5);
-      max-height:50vh;
+      max-height:60vh;
       overflow-y:auto;
       display:none;
       z-index:300;
@@ -177,7 +183,8 @@
     .settings-panel input[type="color"], 
     .settings-panel select, 
     .settings-panel input[type="file"], 
-    .settings-panel input[type="range"] {
+    .settings-panel input[type="range"], 
+    .settings-panel input[type="number"] {
       flex:1;
       margin-top:4px;
     }
@@ -223,14 +230,15 @@
       background:#3a3b3c; 
       color:#fff; 
     }
+
+    .text-control-row { display:flex; gap:6px; margin-bottom:6px; align-items:center; }
+    .text-control-row button { padding:4px 6px; font-size:13px; }
+    .text-control-row input[type=range], .text-control-row input[type=number] { flex:1; }
   </style>
 </head>
 <body>
   <div class="app">
-    <div id="canvas" class="image-canvas" aria-label="preview canvas">
-      <div id="editable-text" class="editable-text" contenteditable="false"></div>
-      <img id="overlay" style="display:none; position:absolute; cursor:grab; touch-action:none;" draggable="false" />
-    </div>
+    <div id="canvas" class="image-canvas" aria-label="preview canvas"></div>
     <div class="bottom-spacer"></div>
   </div>
 
@@ -246,15 +254,92 @@
 
   <!-- Settings toolbar -->
   <div class="settings-toolbar">
-    <button data-panel="fontColorPanel">Font Color</button>
+    <button data-panel="textPanel">Text</button>
     <button data-panel="overlayPanel">Overlay</button>
     <button data-panel="highlightPanel">Highlights</button>
   </div>
 
-  <!-- Panels -->
-  <div id="fontColorPanel" class="settings-panel">
-    <label>Font Color: <input id="fontColor" type="color" value="#ececf1" /></label>
+  <!-- Text Panel -->
+  <div id="textPanel" class="settings-panel">
+    <strong>Text Selection</strong>
+    <select id="textSelect"></select>
+
+    <strong>Edit Text</strong>
+    <textarea id="textEditInput" style="width:100%;height:50px;"></textarea>
+
+    <div class="text-control-row">
+      <button id="deleteText">🗑 Delete</button>
+      <button id="copyText">📄 Copy</button>
+    </div>
+
+    <strong>Text Position</strong>
+    <div class="text-control-row">
+      <label>X:</label>
+      <input type="range" id="posX" min="0" max="480" value="0">
+      <input type="number" id="posXVal" min="0" max="480" value="0">
+    </div>
+    <div class="text-control-row">
+      <label>Y:</label>
+      <input type="range" id="posY" min="0" max="853" value="0">
+      <input type="number" id="posYVal" min="0" max="853" value="0">
+    </div>
+
+    <div class="text-control-row">
+      <button id="alignLeft">⬅️</button>
+      <button id="alignCenter">⬜</button>
+      <button id="alignRight">➡️</button>
+      <button id="alignTop">⬆️</button>
+      <button id="alignMiddle">⬜</button>
+      <button id="alignBottom">⬇️</button>
+    </div>
+
+    <strong>Font Color & Opacity</strong>
+    <div class="text-control-row">
+      <input type="color" id="fontColorPicker">
+      <input type="number" id="fontOpacity" min="0" max="100" value="100">
+    </div>
+
+    <strong>Font Size</strong>
+    <div class="text-control-row">
+      <button id="fontSizeMinus">-</button>
+      <input type="range" id="fontSizeSlider" min="2" max="500" value="15">
+      <input type="number" id="fontSizeVal" min="2" max="500" value="15">
+      <button id="fontSizePlus">+</button>
+    </div>
+
+    <strong>Font Selection / Upload</strong>
+    <div class="text-control-row">
+      <select id="fontSelect">
+        <option value="Artifakt Element">Artifakt Element</option>
+        <option value="Arial">Arial</option>
+        <option value="Verdana">Verdana</option>
+        <option value="Times New Roman">Times New Roman</option>
+      </select>
+      <input type="file" id="fontUpload" accept=".ttf,.otf,.woff,.woff2">
+    </div>
+
+    <strong>Text Style</strong>
+    <div class="text-control-row">
+      <button id="boldBtn">B</button>
+      <button id="italicBtn">I</button>
+      <button id="underlineBtn">U</button>
+      <button id="strikeBtn">S</button>
+    </div>
+
+    <strong>Line & Letter Spacing</strong>
+    <div class="text-control-row">
+      <label>Line:</label>
+      <input type="range" id="lineSpacing" min="0.5" max="3" step="0.1" value="1.4">
+      <input type="number" id="lineSpacingVal" min="0.5" max="3" step="0.1" value="1.4">
+    </div>
+    <div class="text-control-row">
+      <label>Letter:</label>
+      <input type="range" id="letterSpacing" min="0" max="10" step="0.1" value="0">
+      <input type="number" id="letterSpacingVal" min="0" max="10" step="0.1" value="0">
+    </div>
   </div>
+
+  <!-- Overlay Panel -->
   <div id="overlayPanel" class="settings-panel">
     <label>Upload Overlay Image: <input id="overlayUpload" type="file" accept="image/*" /></label>
     <div class="slider-row">
@@ -264,6 +349,8 @@
       <div id="overlaySizeVal" class="slider-value">200px</div>
     </div>
   </div>
+
+  <!-- Highlights Panel -->
   <div id="highlightPanel" class="settings-panel">
     <div class="highlight-section">
       <strong>Highlight Words</strong>
@@ -283,39 +370,77 @@
       Elements
     ***********************/
     const canvas = document.getElementById('canvas');
-    const textEl = document.getElementById('editable-text');
     const textInput = document.getElementById('textInput');
-    const overlay = document.getElementById('overlay');
+    const overlay = document.createElement('img'); overlay.id="overlay";
+    overlay.style.display="none"; overlay.style.position="absolute"; overlay.draggable=false;
+    canvas.appendChild(overlay);
 
-    const fontColorInput = document.getElementById('fontColor');
-    const overlayUpload = document.getElementById('overlayUpload');
-    const overlaySizeInput = document.getElementById('overlaySize');
-    const overlaySizeVal = document.getElementById('overlaySizeVal');
+    const panels = document.querySelectorAll('.settings-panel');
+    const toolbarButtons = document.querySelectorAll('.settings-toolbar button');
 
+    // Text panel elements
+    const textPanelSelect = document.getElementById('textSelect');
+    const textEditInput = document.getElementById('textEditInput');
+    const deleteTextBtn = document.getElementById('deleteText');
+    const copyTextBtn = document.getElementById('copyText');
+
+    const posX = document.getElementById('posX');
+    const posY = document.getElementById('posY');
+    const posXVal = document.getElementById('posXVal');
+    const posYVal = document.getElementById('posYVal');
+
+    const alignLeft = document.getElementById('alignLeft');
+    const alignCenter = document.getElementById('alignCenter');
+    const alignRight = document.getElementById('alignRight');
+    const alignTop = document.getElementById('alignTop');
+    const alignMiddle = document.getElementById('alignMiddle');
+    const alignBottom = document.getElementById('alignBottom');
+
+    const fontColorPicker = document.getElementById('fontColorPicker');
+    const fontOpacity = document.getElementById('fontOpacity');
+
+    const fontSizeSlider = document.getElementById('fontSizeSlider');
+    const fontSizeVal = document.getElementById('fontSizeVal');
+    const fontSizeMinus = document.getElementById('fontSizeMinus');
+    const fontSizePlus = document.getElementById('fontSizePlus');
+
+    const fontSelect = document.getElementById('fontSelect');
+    const fontUpload = document.getElementById('fontUpload');
+
+    const boldBtn = document.getElementById('boldBtn');
+    const italicBtn = document.getElementById('italicBtn');
+    const underlineBtn = document.getElementById('underlineBtn');
+    const strikeBtn = document.getElementById('strikeBtn');
+
+    const lineSpacing = document.getElementById('lineSpacing');
+    const lineSpacingVal = document.getElementById('lineSpacingVal');
+    const letterSpacing = document.getElementById('letterSpacing');
+    const letterSpacingVal = document.getElementById('letterSpacingVal');
+
+    // Highlights elements
     const highlightContainer = document.getElementById('highlightWordsContainer');
     const addWordInput = document.getElementById('addWordInput');
     const selectAllCheckbox = document.getElementById('selectAllWords');
 
+    // Download
     const downloadBtn = document.getElementById('downloadBtn');
     const downloadMenu = document.getElementById('downloadMenu');
 
+    let texts = [];
+    let selectedTextId = null;
+
+    // Overlay state
     let overlayX = 40, overlayY = 40;
     let dragging = false, startX = 0, startY = 0, startOverlayX = 0, startOverlayY = 0;
+    let startDistance = 0, startScale = 1, currentScale = 1;
 
-    let startDistance = 0;
-    let startScale = 1;
-    let currentScale = 1;
-
+    // Word highlighting
     let detectedWords = [], customWords = [], highlightedWords = {};
-
-    const stopWords = ["the","is","a","an","and","or","in","on","at","of","for","to","with","by","you","your","this","that","it","as","be","are","was","were","from","into","but","if","so","about","can","not","i","me","my","myself","we","our","ours","ourselves","he","him","his","himself","she","her","hers","herself","they","them","their","theirs","themselves","what","which","who","whom","these","those","am","been","being","have","has","had","having","do","does","did","doing","because","until","while","against","between","through","during","before","after","above","below","up","down","out","off","over","under","again","further","then","once","here","there","when","where","why","all","any","both","each","few","more","most","other","some","such","no","nor","only","own","same","than","too","very"];
+    const stopWords = ["the","is","a","an","and","or","in","on","at","of","for","to","with","by","you","your","this","that","it","as","be","are","was","were","from","into","but","if","so","about","can","not","i","me","my","myself","we","our","ours","he","him","his","himself","she","her","hers","herself","they","them","their","theirs","themselves","what","which","who","whom","these","those","am","been","being","have","has","had","having","do","does","did","doing","because","until","while","against","between","through","during","before","after","above","below","up","down","out","off","over","under","again","further","then","once","here","there","when","where","why","all","any","both","each","few","more","most","other","some","such","no","nor","only","own","same","than","too","very"];
 
     /***********************
-      Toolbar Panels
+      Toolbar
     ***********************/
-    const toolbarButtons = document.querySelectorAll('.settings-toolbar button');
-    const panels = document.querySelectorAll('.settings-panel');
-
     toolbarButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         const target = document.getElementById(btn.dataset.panel);
@@ -333,20 +458,185 @@
     });
 
     /***********************
+      Text management
+    ***********************/
+    function createTextBox(content="New Text") {
+      const div = document.createElement('div');
+      div.className = 'editable-text';
+      div.contentEditable = true;
+      div.style.left = "50px";
+      div.style.top = "50px";
+      div.textContent = content;
+      div.dataset.id = Date.now() + Math.random();
+      canvas.appendChild(div);
+      texts.push(div.dataset.id);
+      updateTextSelect();
+      selectText(div.dataset.id);
+      div.addEventListener('click', e => {
+        e.stopPropagation();
+        selectText(div.dataset.id);
+      });
+      return div;
+    }
+
+    function getSelectedTextEl() { 
+      return canvas.querySelector(`.editable-text[data-id="${selectedTextId}"]`);
+    }
+
+    function selectText(id) {
+      selectedTextId = id;
+      canvas.querySelectorAll('.editable-text').forEach(t => t.classList.remove('selected'));
+      const el = getSelectedTextEl();
+      if(el) el.classList.add('selected');
+      updatePanelValues();
+    }
+
+    function updateTextSelect() {
+      textPanelSelect.innerHTML = "";
+      texts.forEach(id => {
+        const el = canvas.querySelector(`.editable-text[data-id="${id}"]`);
+        if(!el) return;
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = el.textContent.slice(0,20);
+        if(id===selectedTextId) opt.selected=true;
+        textPanelSelect.appendChild(opt);
+      });
+    }
+
+    function updatePanelValues() {
+      const el = getSelectedTextEl();
+      if(!el) return;
+      textEditInput.value = el.textContent;
+      posX.value = parseInt(el.style.left); posXVal.value = posX.value;
+      posY.value = parseInt(el.style.top); posYVal.value = posY.value;
+      fontColorPicker.value = rgbToHex(el.style.color);
+      fontOpacity.value = Math.round(parseFloat(el.style.opacity||1)*100);
+      fontSizeSlider.value = parseInt(el.style.fontSize) || 15;
+      fontSizeVal.value = fontSizeSlider.value;
+      fontSelect.value = el.style.fontFamily || "Artifakt Element";
+      boldBtn.style.background = el.style.fontWeight==="bold"?"#10a37f":"";
+      italicBtn.style.background = el.style.fontStyle==="italic"?"#10a37f":"";
+      underlineBtn.style.background = el.style.textDecoration.includes("underline")?"#10a37f":"";
+      strikeBtn.style.background = el.style.textDecoration.includes("line-through")?"#10a37f":"";
+      lineSpacing.value = parseFloat(el.style.lineHeight)||1.4;
+      lineSpacingVal.value = lineSpacing.value;
+      letterSpacing.value = parseFloat(el.style.letterSpacing)||0;
+      letterSpacingVal.value = letterSpacing.value;
+    }
+
+    function rgbToHex(rgb) {
+      if(!rgb) return "#ffffff";
+      const m = rgb.match(/\d+/g);
+      if(!m) return "#ffffff";
+      return "#" + ((1 << 24) + (parseInt(m[0]) << 16) + (parseInt(m[1]) << 8) + parseInt(m[2])).toString(16).slice(1);
+    }
+
+    // Add initial text
+    createTextBox("Hello World");
+
+    // Dropdown selection
+    textPanelSelect.addEventListener('change', ()=> selectText(textPanelSelect.value));
+
+    // Edit text
+    textEditInput.addEventListener('input', ()=> {
+      const el = getSelectedTextEl();
+      if(el) el.textContent = textEditInput.value;
+      updateTextSelect();
+    });
+
+    // Delete
+    deleteTextBtn.addEventListener('click', ()=>{
+      const el = getSelectedTextEl();
+      if(el) { el.remove(); texts = texts.filter(tid=>tid!==selectedTextId); selectedTextId=texts[0]||null; updateTextSelect(); selectText(selectedTextId); }
+    });
+
+    // Copy
+    copyTextBtn.addEventListener('click', ()=>{
+      const el = getSelectedTextEl();
+      if(el) {
+        const copy = createTextBox(el.textContent);
+        copy.style.left = (parseInt(el.style.left)+10)+"px";
+        copy.style.top = (parseInt(el.style.top)+10)+"px";
+        copy.style.fontSize = el.style.fontSize;
+        copy.style.color = el.style.color;
+        copy.style.fontFamily = el.style.fontFamily;
+        copy.style.fontWeight = el.style.fontWeight;
+        copy.style.fontStyle = el.style.fontStyle;
+        copy.style.textDecoration = el.style.textDecoration;
+        copy.style.lineHeight = el.style.lineHeight;
+        copy.style.letterSpacing = el.style.letterSpacing;
+        selectText(copy.dataset.id);
+      }
+    });
+
+    // Position sliders
+    posX.addEventListener('input', ()=> { 
+      const el = getSelectedTextEl(); if(el){ el.style.left = posX.value+"px"; posXVal.value = posX.value;} 
+    });
+    posY.addEventListener('input', ()=> { 
+      const el = getSelectedTextEl(); if(el){ el.style.top = posY.value+"px"; posYVal.value = posY.value;} 
+    });
+    posXVal.addEventListener('input', ()=> { posX.value = posXVal.value; posX.dispatchEvent(new Event('input')); });
+    posYVal.addEventListener('input', ()=> { posY.value = posYVal.value; posY.dispatchEvent(new Event('input')); });
+
+    // Alignment buttons
+    alignLeft.addEventListener('click', ()=> { const el=getSelectedTextEl(); if(el) el.style.textAlign="left"; });
+    alignCenter.addEventListener('click', ()=> { const el=getSelectedTextEl(); if(el) el.style.textAlign="center"; });
+    alignRight.addEventListener('click', ()=> { const el=getSelectedTextEl(); if(el) el.style.textAlign="right"; });
+    alignTop.addEventListener('click', ()=> { const el=getSelectedTextEl(); if(el) el.style.top="0px"; });
+    alignMiddle.addEventListener('click', ()=> { const el=getSelectedTextEl(); if(el) el.style.top=(canvas.clientHeight/2 - (parseInt(el.offsetHeight)/2))+"px"; });
+    alignBottom.addEventListener('click', ()=> { const el=getSelectedTextEl(); if(el) el.style.top=(canvas.clientHeight-parseInt(getSelectedTextEl().offsetHeight))+"px"; });
+
+    // Font color + opacity
+    fontColorPicker.addEventListener('input', ()=> { const el=getSelectedTextEl(); if(el) el.style.color=fontColorPicker.value; });
+    fontOpacity.addEventListener('input', ()=> { const el=getSelectedTextEl(); if(el) el.style.opacity=(fontOpacity.value/100); });
+
+    // Font size
+    fontSizeSlider.addEventListener('input', ()=> { const el=getSelectedTextEl(); if(el){ el.style.fontSize=fontSizeSlider.value+"px"; fontSizeVal.value=fontSizeSlider.value; }});
+    fontSizeVal.addEventListener('input', ()=> { fontSizeSlider.value=fontSizeVal.value; fontSizeSlider.dispatchEvent(new Event('input')); });
+    fontSizeMinus.addEventListener('click', ()=> { fontSizeSlider.value = Math.max(2,parseInt(fontSizeSlider.value)-1); fontSizeSlider.dispatchEvent(new Event('input')); });
+    fontSizePlus.addEventListener('click', ()=> { fontSizeSlider.value = Math.min(500,parseInt(fontSizeSlider.value)+1); fontSizeSlider.dispatchEvent(new Event('input')); });
+
+    // Font select/upload
+    fontSelect.addEventListener('change', ()=> { const el=getSelectedTextEl(); if(el) el.style.fontFamily=fontSelect.value; });
+    fontUpload.addEventListener('change', e=>{
+      const f=e.target.files[0];
+      if(f){ const url=URL.createObjectURL(f); const font=new FontFace(f.name,url); font.load().then(ff=>{document.fonts.add(ff); const el=getSelectedTextEl(); if(el) el.style.fontFamily=f.name; fontSelect.value=f.name;}); }
+    });
+
+    // Styles
+    boldBtn.addEventListener('click', ()=>{ const el=getSelectedTextEl(); if(el){ el.style.fontWeight=el.style.fontWeight==="bold"?"normal":"bold"; boldBtn.style.background=el.style.fontWeight==="bold"?"#10a37f":"";}});
+    italicBtn.addEventListener('click', ()=>{ const el=getSelectedTextEl(); if(el){ el.style.fontStyle=el.style.fontStyle==="italic"?"normal":"italic"; italicBtn.style.background=el.style.fontStyle==="italic"?"#10a37f":"";}});
+    underlineBtn.addEventListener('click', ()=>{ const el=getSelectedTextEl(); if(el){ if(el.style.textDecoration.includes("underline")) el.style.textDecoration=""; else el.style.textDecoration="underline"; underlineBtn.style.background=el.style.textDecoration.includes("underline")?"#10a37f":"";}});
+    strikeBtn.addEventListener('click', ()=>{ const el=getSelectedTextEl(); if(el){ if(el.style.textDecoration.includes("line-through")) el.style.textDecoration=""; else el.style.textDecoration="line-through"; strikeBtn.style.background=el.style.textDecoration.includes("line-through")?"#10a37f":"";}});
+
+    // Line & letter spacing
+    lineSpacing.addEventListener('input', ()=>{ const el=getSelectedTextEl(); if(el){ el.style.lineHeight=lineSpacing.value; lineSpacingVal.value=lineSpacing.value;}});
+    lineSpacingVal.addEventListener('input', ()=>{ lineSpacing.value=lineSpacingVal.value; lineSpacing.dispatchEvent(new Event('input')); });
+    letterSpacing.addEventListener('input', ()=>{ const el=getSelectedTextEl(); if(el){ el.style.letterSpacing=letterSpacing.value+"px"; letterSpacingVal.value=letterSpacing.value;}});
+    letterSpacingVal.addEventListener('input', ()=>{ letterSpacing.value=letterSpacingVal.value; letterSpacing.dispatchEvent(new Event('input')); });
+
+    /***********************
       Highlight functions
     ***********************/
     function escapeRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
 
     function updateHighlightedText(){
-      let txt = textInput.value || "";
-      const allOrder = Array.from(new Set([...detectedWords, ...customWords]));
-      allOrder.forEach(w => {
-        if (highlightedWords[w]) {
-          const regex = new RegExp("\\b(" + escapeRegex(w) + ")\\b", "gi");
-          txt = txt.replace(regex, '<span style="font-weight:bold;">$1</span>');
-        }
+      canvas.querySelectorAll('.editable-text').forEach(t=>t.innerHTML=t.textContent); // reset
+      texts.forEach(id=>{
+        const el = canvas.querySelector(`.editable-text[data-id="${id}"]`);
+        if(!el) return;
+        let txt = el.textContent;
+        const allOrder = Array.from(new Set([...detectedWords, ...customWords]));
+        allOrder.forEach(w => {
+          if (highlightedWords[w]) {
+            const regex = new RegExp("\\b(" + escapeRegex(w) + ")\\b", "gi");
+            txt = txt.replace(regex, '<span style="font-weight:bold;">$1</span>');
+          }
+        });
+        el.innerHTML = txt.replace(/\n/g, "<br/>");
       });
-      textEl.innerHTML = txt.replace(/\n/g, "<br/>");
     }
 
     function updateDetectedWords(){
@@ -389,9 +679,6 @@
       selectAllCheckbox.checked = all.every(w => highlightedWords[w]);
     }
 
-    /***********************
-      Event Bindings
-    ***********************/
     textInput.addEventListener('input', () => {
       updateDetectedWords();
       updateHighlightedText();
@@ -416,19 +703,18 @@
       renderHighlightWords();
     });
 
-    fontColorInput.addEventListener('input', ()=> textEl.style.color = fontColorInput.value);
+    /***********************
+      Overlay
+    ***********************/
+    const overlayUpload = document.getElementById('overlayUpload');
+    const overlaySizeInput = document.getElementById('overlaySize');
+    const overlaySizeVal = document.getElementById('overlaySizeVal');
 
     overlayUpload.addEventListener('change', e=>{
       const f=e.target.files[0];
-      if(f){ const r=new FileReader(); r.onload=ev=>{
-        overlay.src=ev.target.result;
-        overlay.style.display='block';
-        overlay.style.left=overlayX+'px';
-        overlay.style.top=overlayY+'px';
-        overlay.width=overlaySizeInput.value;
-        overlay.style.transform=`scale(${currentScale})`;
-      }; r.readAsDataURL(f);}
+      if(f){ const r=new FileReader(); r.onload=ev=>{overlay.src=ev.target.result; overlay.style.display='block'; overlay.style.left=overlayX+'px'; overlay.style.top=overlayY+'px'; overlay.width=overlaySizeInput.value; overlay.style.transform=`scale(${currentScale})`;}; r.readAsDataURL(f);}
     });
+
     overlaySizeInput.addEventListener('input', ()=>{overlay.width=overlaySizeInput.value; overlaySizeVal.textContent=overlaySizeInput.value+"px";});
 
     overlay.addEventListener('pointerdown', e=>{dragging=true; startX=e.clientX; startY=e.clientY; startOverlayX=overlayX; startOverlayY=overlayY; overlay.setPointerCapture(e.pointerId);});
@@ -456,28 +742,27 @@
         currentScale = Math.max(0.2, Math.min(5, startScale * scale));
         overlay.style.transform = `scale(${currentScale})`;
 
-        overlaySizeInput.value = Math.round(overlay.naturalWidth * currentScale);
-        overlaySizeVal.textContent = overlaySizeInput.value + "px";
+        overlaySizeInput.value = Math.round(overlay.width*currentScale);
+        overlaySizeVal.textContent = overlaySizeInput.value+"px";
       }
     }, {passive:false});
 
-    downloadBtn.addEventListener('click', ()=> downloadMenu.style.display = downloadMenu.style.display==='flex'?'none':'flex');
+    /***********************
+      Download
+    ***********************/
+    downloadBtn.addEventListener('click', ()=>downloadMenu.style.display = downloadMenu.style.display==='flex'?'none':'flex');
     downloadMenu.querySelectorAll('button').forEach(btn=>{
       btn.addEventListener('click', ()=>{
-        const scale = parseInt(btn.dataset.scale);
-        html2canvas(canvas,{scale}).then(canvasOut=>{
-          const link=document.createElement('a');
-          link.download='text_image.png';
-          link.href=canvasOut.toDataURL();
-          link.click();
+        const scale=parseInt(btn.dataset.scale);
+        html2canvas(canvas,{scale}).then(canvasEl=>{
+          const a=document.createElement('a');
+          a.href=canvasEl.toDataURL("image/png");
+          a.download="image.png";
+          a.click();
         });
-        downloadMenu.style.display='none';
       });
     });
 
-    // init
-    updateDetectedWords();
-    updateHighlightedText();
   </script>
 </body>
 </html>
