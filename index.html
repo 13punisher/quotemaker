@@ -5,20 +5,22 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
   <title>Text Image Generator with Highlights</title>
 
-  <script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <!-- Google Font -->
   <link href="https://fonts.googleapis.com/css2?family=Artifakt+Element&display=swap" rel="stylesheet">
+
+  <script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
   <style>
     :root { 
-      --panel-bg: rgba(42,43,45,0.95); 
+      --panel-bg: #2a2b2d; 
       --panel-fg: #fff; 
       --accent: #10a37f; 
       --dark: #202123; 
     }
     body { 
       margin: 0; 
-      font-family: 'Artifakt Element', sans-serif;
-      background: #000; 
+      font-family: "Artifakt Element", sans-serif; 
+      background: #121212; 
       color: #fff; 
     }
     .app { 
@@ -54,8 +56,13 @@
 
     .bottom-spacer { height:32px; }
 
-    /* Download button */
-    .download-btn {
+    /* Download button (top right) */
+    .download-container {
+      position:fixed;
+      top:12px; right:12px;
+      z-index:1100;
+    }
+    .download-btn, .download-menu button {
       background: var(--accent); 
       color: #fff; 
       padding:10px 16px; 
@@ -65,59 +72,26 @@
       font-size:15px; 
       transition: background .2s;
     }
-    .download-btn:hover { background:#0d8c6b; }
-
-    #downloadWrapper {
-      position: fixed;
-      top: 12px;
-      right: 12px;
-      z-index: 1100;
-    }
+    .download-btn:hover, .download-menu button:hover { background:#0d8c6b; }
     .download-menu {
       position:absolute; 
-      top: 45px; 
-      right:0; 
+      top:50px; right:0;
       background:var(--panel-bg); 
-      border-radius:12px; 
-      padding:10px;
+      border-radius:8px; 
+      padding:10px; 
       display:none; 
       flex-direction:column; 
       gap:10px; 
       color:var(--panel-fg); 
       box-shadow:0 6px 18px rgba(0,0,0,.4); 
-      min-width:160px;
-    }
-    .download-menu button {
-      background: var(--accent); 
-      color: #fff; 
-      padding:8px 12px; 
-      border:none; 
-      border-radius:6px;
-      cursor:pointer; 
-      font-size:14px; 
-      transition: background .2s;
-    }
-    .download-menu button:hover { background:#0d8c6b; }
-
-    .plus-btn {
-      border-radius:50%; 
-      width:40px; 
-      height:40px; 
-      font-size:20px; 
-      display:inline-flex; 
-      align-items:center; 
-      justify-content:center; 
-      background:#313233; 
-      color:#fff; 
-      border:none; 
-      cursor:pointer; 
+      min-width:200px;
+      z-index:1200;
     }
 
+    /* Chat input */
     .chat-input-bar {
       position:fixed; 
-      bottom:0; 
-      left:0; 
-      right:0;
+      bottom:0; left:0; right:0;
       display:flex; 
       align-items:flex-end; 
       justify-content:space-between;
@@ -140,47 +114,79 @@
       padding:10px 14px; 
       font-size:15px; 
       outline:none;
-      font-family: 'Artifakt Element', sans-serif;
     }
 
-    /* Settings drawer */
-    .popup-dialog {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: -100%;
-      max-height: 60vh;
-      background: var(--panel-bg);
-      color: var(--panel-fg);
-      border-radius: 16px 16px 0 0;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      box-shadow: 0 -4px 16px rgba(0,0,0,.5);
-      overflow-y: auto;
-      transition: bottom 0.3s ease;
-      z-index: 1200;
+    /* Toolbar */
+    .settings-toolbar {
+      position:fixed;
+      bottom:60px; 
+      left:0; 
+      right:0;
+      display:flex; 
+      overflow-x:auto;
+      background:#1e1f21;
+      padding:8px;
+      gap:8px;
+      z-index:200;
+      box-shadow:0 -2px 8px rgba(0,0,0,.4);
     }
-    .popup-dialog.open {
-      bottom: 0;
+    .settings-toolbar button {
+      flex:0 0 auto;
+      background:#2d2d2d;
+      border:none;
+      padding:8px 12px;
+      border-radius:8px;
+      color:#fff;
+      font-size:14px;
+      cursor:pointer;
     }
-    .popup-dialog label, 
-    .popup-dialog strong { 
+    .settings-toolbar button:hover {
+      background:#3a3b3c;
+    }
+
+    /* Panels */
+    .settings-panel {
+      position:fixed;
+      bottom:110px;
+      left:10px;
+      right:10px;
+      background:var(--panel-bg);
+      color:var(--panel-fg);
+      border-radius:16px;
+      padding:16px;
+      box-shadow:0 6px 18px rgba(0,0,0,.5);
+      max-height:50vh;
+      overflow-y:auto;
+      display:none;
+      z-index:300;
+      animation: slideUp .3s ease;
+    }
+    @keyframes slideUp {
+      from { transform:translateY(30px); opacity:0; }
+      to { transform:translateY(0); opacity:1; }
+    }
+
+    .settings-panel label, 
+    .settings-panel strong { 
       font-size:14px; 
-      margin-bottom:4px; 
+      margin-bottom:6px; 
       display:flex; 
       align-items:center; 
       gap:8px; 
     }
-    .popup-dialog input, 
-    .popup-dialog select { 
-      flex:1; 
+    .settings-panel input[type="color"], 
+    .settings-panel select, 
+    .settings-panel input[type="file"], 
+    .settings-panel input[type="range"] {
+      flex:1;
+      margin-top:4px;
     }
+
     .slider-row { 
       display:flex; 
       align-items:center; 
       gap:8px; 
+      margin-bottom:10px;
     }
     .slider-value { 
       font-size:13px; 
@@ -188,9 +194,11 @@
       min-width:44px; 
       text-align:right; 
     }
+
     .highlight-section { 
       border-top:1px solid rgba(255,255,255,0.12); 
       padding-top:8px; 
+      margin-top:8px;
     }
     .highlight-row { 
       display:flex; 
@@ -198,25 +206,22 @@
       gap:8px; 
       margin-bottom:6px; 
     }
+    .highlight-row label { 
+      flex:1; 
+      overflow:hidden; 
+      white-space:nowrap; 
+      text-overflow:ellipsis; 
+      cursor:pointer; 
+    }
+
     .add-word-input { 
       width:100%; 
-      padding:10px; 
-      border-radius:8px; 
+      padding:8px; 
+      border-radius:6px; 
       border:none; 
       outline:none; 
       background:#3a3b3c; 
       color:#fff; 
-      font-family: 'Artifakt Element', sans-serif;
-    }
-
-    /* small screens */
-    @media (max-width:600px) {
-      .chat-input-bar { 
-        flex-direction:column; 
-        align-items:stretch; 
-        gap:8px; 
-      }
-      .download-btn { width:100%; }
     }
   </style>
 </head>
@@ -226,78 +231,99 @@
       <div id="editable-text" class="editable-text" contenteditable="false"></div>
       <img id="overlay" style="display:none; position:absolute; cursor:grab; touch-action:none;" draggable="false" />
     </div>
-
     <div class="bottom-spacer"></div>
+  </div>
 
-    <div id="downloadWrapper">
-      <button id="downloadBtn" class="download-btn">Download</button>
-      <div id="downloadMenu" class="download-menu">
-        <button data-scale="1" data-quality="low">Low Quality</button>
-        <button data-scale="2" data-quality="medium">Medium Quality</button>
-        <button data-scale="4" data-quality="high">High Quality</button>
-      </div>
-    </div>
-
-    <div class="chat-input-bar" role="region" aria-label="controls">
-      <button id="settingsBtn" class="plus-btn" aria-label="open settings">+</button>
-      <textarea id="textInput" class="chat-textarea" placeholder="Type your text here"></textarea>
-    </div>
-
-    <div id="settingsPanel" class="popup-dialog">
-      <label>Font Color: <input id="fontColor" type="color" value="#ececf1" /></label>
-      <label>Background: <input id="bgColor" type="color" value="#000000" /></label>
-      <label>Background Image: <input id="bgImage" type="file" accept="image/*" /></label>
-
-      <div class="slider-row">
-        <label style="flex:1">Text Size:
-          <input id="fontSize" type="range" min="0" max="100" value="15" />
-        </label>
-        <div id="fontSizeVal" class="slider-value">15px</div>
-      </div>
-
-      <div class="slider-row">
-        <label style="flex:1">Line Spacing:
-          <input id="lineHeight" type="range" min="1" max="3" step="0.1" value="1.4" />
-        </label>
-        <div id="lineHeightVal" class="slider-value">1.4</div>
-      </div>
-
-      <label>Alignment:
-        <select id="textAlign">
-          <option value="left">Left</option>
-          <option value="center">Center</option>
-          <option value="right">Right</option>
-        </select>
-      </label>
-
-      <label>Upload Overlay Image: <input id="overlayUpload" type="file" accept="image/*" /></label>
-      <div class="slider-row">
-        <label style="flex:1">Overlay Size:
-          <input id="overlaySize" type="range" min="50" max="1000" value="200" />
-        </label>
-        <div id="overlaySizeVal" class="slider-value">200px</div>
-      </div>
-
-      <label>Upload Font from Device: <input id="fontUpload" type="file" accept=".ttf,.otf,.woff,.woff2" /></label>
-
-      <div class="highlight-section" aria-live="polite">
-        <strong>Highlight Words</strong>
-        <div><input id="selectAllWords" type="checkbox" /> <label for="selectAllWords" style="cursor:pointer;">Select All / Unselect All</label></div>
-        <div id="highlightWordsContainer"></div>
-        <input id="addWordInput" class="add-word-input" placeholder="Add custom word and press Enter" />
-      </div>
+  <!-- Download -->
+  <div class="download-container">
+    <button id="downloadBtn" class="download-btn">Download</button>
+    <div id="downloadMenu" class="download-menu">
+      <button data-scale="1" data-quality="low">Low Quality</button>
+      <button data-scale="2" data-quality="medium">Medium Quality</button>
+      <button data-scale="4" data-quality="high">High Quality</button>
     </div>
   </div>
 
+  <!-- Settings toolbar -->
+  <div class="settings-toolbar">
+    <button data-panel="fontColorPanel">Font Color</button>
+    <button data-panel="bgPanel">Background</button>
+    <button data-panel="fontSizePanel">Text Size</button>
+    <button data-panel="lineHeightPanel">Line Spacing</button>
+    <button data-panel="alignPanel">Alignment</button>
+    <button data-panel="overlayPanel">Overlay</button>
+    <button data-panel="fontUploadPanel">Font Upload</button>
+    <button data-panel="highlightPanel">Highlights</button>
+  </div>
+
+  <!-- Panels -->
+  <div id="fontColorPanel" class="settings-panel">
+    <label>Font Color: <input id="fontColor" type="color" value="#ececf1" /></label>
+  </div>
+  <div id="bgPanel" class="settings-panel">
+    <label>Background: <input id="bgColor" type="color" value="#000000" /></label>
+    <label>Background Image: <input id="bgImage" type="file" accept="image/*" /></label>
+  </div>
+  <div id="fontSizePanel" class="settings-panel">
+    <div class="slider-row">
+      <label style="flex:1">Text Size:
+        <input id="fontSize" type="range" min="10" max="100" value="15" />
+      </label>
+      <div id="fontSizeVal" class="slider-value">15px</div>
+    </div>
+  </div>
+  <div id="lineHeightPanel" class="settings-panel">
+    <div class="slider-row">
+      <label style="flex:1">Line Spacing:
+        <input id="lineHeight" type="range" min="1" max="3" step="0.1" value="1.4" />
+      </label>
+      <div id="lineHeightVal" class="slider-value">1.4</div>
+    </div>
+  </div>
+  <div id="alignPanel" class="settings-panel">
+    <label>Alignment:
+      <select id="textAlign">
+        <option value="left">Left</option>
+        <option value="center">Center</option>
+        <option value="right">Right</option>
+      </select>
+    </label>
+  </div>
+  <div id="overlayPanel" class="settings-panel">
+    <label>Upload Overlay Image: <input id="overlayUpload" type="file" accept="image/*" /></label>
+    <div class="slider-row">
+      <label style="flex:1">Overlay Size:
+        <input id="overlaySize" type="range" min="50" max="1000" value="200" />
+      </label>
+      <div id="overlaySizeVal" class="slider-value">200px</div>
+    </div>
+  </div>
+  <div id="fontUploadPanel" class="settings-panel">
+    <label>Upload Font from Device: <input id="fontUpload" type="file" accept=".ttf,.otf,.woff,.woff2" /></label>
+  </div>
+  <div id="highlightPanel" class="settings-panel">
+    <div class="highlight-section">
+      <strong>Highlight Words</strong>
+      <div><input id="selectAllWords" type="checkbox" /> <label for="selectAllWords">Select All / Unselect All</label></div>
+      <div id="highlightWordsContainer"></div>
+      <input id="addWordInput" class="add-word-input" placeholder="Add custom word and press Enter" />
+    </div>
+  </div>
+
+  <!-- Chat input -->
+  <div class="chat-input-bar" role="region" aria-label="controls">
+    <textarea id="textInput" class="chat-textarea" placeholder="Type your text here"></textarea>
+  </div>
+
   <script>
+    /***********************
+      Elements
+    ***********************/
     const canvas = document.getElementById('canvas');
     const textEl = document.getElementById('editable-text');
     const textInput = document.getElementById('textInput');
     const overlay = document.getElementById('overlay');
-    const overlaySizeInput = document.getElementById('overlaySize');
-    const overlaySizeVal = document.getElementById('overlaySizeVal');
-    const settingsBtn = document.getElementById('settingsBtn');
-    const settingsPanel = document.getElementById('settingsPanel');
+
     const fontColorInput = document.getElementById('fontColor');
     const bgColorInput = document.getElementById('bgColor');
     const bgImageInput = document.getElementById('bgImage');
@@ -307,19 +333,52 @@
     const lineHeightVal = document.getElementById('lineHeightVal');
     const textAlignInput = document.getElementById('textAlign');
     const overlayUpload = document.getElementById('overlayUpload');
+    const overlaySizeInput = document.getElementById('overlaySize');
+    const overlaySizeVal = document.getElementById('overlaySizeVal');
     const fontUpload = document.getElementById('fontUpload');
+
     const highlightContainer = document.getElementById('highlightWordsContainer');
     const addWordInput = document.getElementById('addWordInput');
     const selectAllCheckbox = document.getElementById('selectAllWords');
+
     const downloadBtn = document.getElementById('downloadBtn');
     const downloadMenu = document.getElementById('downloadMenu');
 
     let overlayX = 40, overlayY = 40;
     let dragging = false, startX = 0, startY = 0, startOverlayX = 0, startOverlayY = 0;
+
+    // word highlighting state
     let detectedWords = [], customWords = [], highlightedWords = {};
+
     const stopWords = ["the","is","a","an","and","or","in","on","at","of","for","to","with","by","you","your","this","that","it","as","be","are","was","were","from","into","but","if","so","about","can","not","i","me","my","myself","we","our","ours","ourselves","he","him","his","himself","she","her","hers","herself","they","them","their","theirs","themselves","what","which","who","whom","these","those","am","been","being","have","has","had","having","do","does","did","doing","because","until","while","against","between","through","during","before","after","above","below","up","down","out","off","over","under","again","further","then","once","here","there","when","where","why","all","any","both","each","few","more","most","other","some","such","no","nor","only","own","same","than","too","very"];
 
+    /***********************
+      Toolbar Panels
+    ***********************/
+    const toolbarButtons = document.querySelectorAll('.settings-toolbar button');
+    const panels = document.querySelectorAll('.settings-panel');
+
+    toolbarButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = document.getElementById(btn.dataset.panel);
+        const isOpen = target.style.display === 'block';
+        panels.forEach(p => p.style.display = 'none');
+        if (!isOpen) target.style.display = 'block';
+      });
+    });
+
+    document.addEventListener('pointerdown', (e) => {
+      if (![...panels].some(p => p.contains(e.target)) && 
+          ![...toolbarButtons].some(b => b.contains(e.target))) {
+        panels.forEach(p => p.style.display = 'none');
+      }
+    });
+
+    /***********************
+      Highlight functions
+    ***********************/
     function escapeRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+
     function updateHighlightedText(){
       let txt = textInput.value || "";
       const allOrder = Array.from(new Set([...detectedWords, ...customWords]));
@@ -331,6 +390,7 @@
       });
       textEl.innerHTML = txt.replace(/\n/g, "<br/>");
     }
+
     function updateDetectedWords(){
       const content = (textInput.value || "").toLowerCase().replace(/[.,!?;:()"]/g,"");
       const arr = content.split(/\s+/).filter(w => w && !stopWords.includes(w));
@@ -340,6 +400,7 @@
       detectedWords.forEach(w => { if (!(w in highlightedWords)) highlightedWords[w] = true; });
       renderHighlightWords();
     }
+
     function renderHighlightWords(){
       highlightContainer.innerHTML = "";
       const all = Array.from(new Set([...detectedWords, ...customWords]));
@@ -347,6 +408,7 @@
         const id = 'cb_'+idx+'_'+word.replace(/[^a-z0-9]/gi,'_')+'_'+Math.random().toString(36).slice(2,7);
         const row = document.createElement('div');
         row.className = 'highlight-row';
+
         const cb = document.createElement('input');
         cb.type = 'checkbox';
         cb.id = id;
@@ -354,20 +416,29 @@
         cb.addEventListener('change', () => {
           highlightedWords[word] = cb.checked;
           updateHighlightedText();
-          selectAllCheckbox.checked = Array.from(new Set([...detectedWords, ...customWords])).every(w => highlightedWords[w]);
+          selectAllCheckbox.checked = all.every(w => highlightedWords[w]);
         });
+
         const lbl = document.createElement('label');
         lbl.htmlFor = id;
         lbl.textContent = word;
+
         row.appendChild(cb);
         row.appendChild(lbl);
         highlightContainer.appendChild(row);
       });
       updateHighlightedText();
-      selectAllCheckbox.checked = Array.from(new Set([...detectedWords, ...customWords])).every(w => highlightedWords[w]);
+      selectAllCheckbox.checked = all.every(w => highlightedWords[w]);
     }
 
-    textInput.addEventListener('input', () => { updateDetectedWords(); updateHighlightedText(); });
+    /***********************
+      Event Bindings
+    ***********************/
+    textInput.addEventListener('input', () => {
+      updateDetectedWords();
+      updateHighlightedText();
+    });
+
     addWordInput.addEventListener("keydown", e => {
       if (e.key === "Enter") {
         e.preventDefault();
@@ -376,148 +447,60 @@
           customWords.push(w);
           highlightedWords[w] = true;
           renderHighlightWords();
-          updateHighlightedText();
-          e.target.value = "";
         }
+        e.target.value = "";
       }
     });
+
     selectAllCheckbox.addEventListener('change', () => {
       const all = Array.from(new Set([...detectedWords, ...customWords]));
       all.forEach(w => highlightedWords[w] = selectAllCheckbox.checked);
       renderHighlightWords();
     });
 
-    // Settings drawer toggle
-    settingsBtn.addEventListener('click', () => {
-      settingsPanel.classList.toggle('open');
+    fontColorInput.addEventListener('input', ()=> textEl.style.color = fontColorInput.value);
+    bgColorInput.addEventListener('input', ()=> {
+      canvas.style.background = bgColorInput.value;
+      canvas.style.backgroundImage = "";
     });
-    // Close drawer on outside click
-    document.addEventListener('click', e => {
-      if (settingsPanel.classList.contains('open') && !settingsPanel.contains(e.target) && e.target !== settingsBtn) {
-        settingsPanel.classList.remove('open');
-      }
+    bgImageInput.addEventListener('change', e=>{
+      const f=e.target.files[0];
+      if(f){ const r=new FileReader(); r.onload = ev => {canvas.style.backgroundImage=`url(${ev.target.result})`; canvas.style.backgroundSize="cover";}; r.readAsDataURL(f);}
     });
-    // Swipe down to close
-    let touchStartY = 0;
-    settingsPanel.addEventListener('touchstart', e => {
-      touchStartY = e.touches[0].clientY;
+    fontSizeInput.addEventListener('input', ()=> {textEl.style.fontSize=fontSizeInput.value+"px"; fontSizeVal.textContent=fontSizeInput.value+"px";});
+    lineHeightInput.addEventListener('input', ()=> {textEl.style.lineHeight=lineHeightInput.value; lineHeightVal.textContent=lineHeightInput.value;});
+    textAlignInput.addEventListener('change', ()=> textEl.style.textAlign=textAlignInput.value);
+
+    overlayUpload.addEventListener('change', e=>{
+      const f=e.target.files[0];
+      if(f){ const r=new FileReader(); r.onload=ev=>{overlay.src=ev.target.result; overlay.style.display='block'; overlay.width=overlaySizeInput.value; overlay.style.left=overlayX+'px'; overlay.style.top=overlayY+'px';}; r.readAsDataURL(f);}
     });
-    settingsPanel.addEventListener('touchend', e => {
-      let touchEndY = e.changedTouches[0].clientY;
-      if (touchEndY - touchStartY > 80) {
-        settingsPanel.classList.remove('open');
-      }
+    overlaySizeInput.addEventListener('input', ()=>{overlay.width=overlaySizeInput.value; overlaySizeVal.textContent=overlaySizeInput.value+"px";});
+
+    overlay.addEventListener('pointerdown', e=>{dragging=true; startX=e.clientX; startY=e.clientY; startOverlayX=overlayX; startOverlayY=overlayY; overlay.setPointerCapture(e.pointerId);});
+    overlay.addEventListener('pointermove', e=>{ if(!dragging)return; const dx=e.clientX-startX, dy=e.clientY-startY; overlayX=startOverlayX+dx; overlayY=startOverlayY+dy; overlay.style.left=overlayX+'px'; overlay.style.top=overlayY+'px';});
+    overlay.addEventListener('pointerup', e=>{dragging=false; overlay.releasePointerCapture(e.pointerId);});
+
+    fontUpload.addEventListener('change', e=>{
+      const f=e.target.files[0];
+      if(f){ const url=URL.createObjectURL(f); const font=new FontFace(f.name,url); font.load().then(ff=>{document.fonts.add(ff); textEl.style.fontFamily=f.name;}); }
     });
 
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') { settingsPanel.classList.remove('open'); downloadMenu.style.display='none'; }
-    });
-
-    fontColorInput.addEventListener('input', e => textEl.style.color = e.target.value);
-    bgColorInput.addEventListener('input', e => canvas.style.background = e.target.value);
-    bgImageInput.addEventListener('change', e => {
-      const f = e.target.files[0];
-      if (!f) return;
-      const r = new FileReader();
-      r.onload = ev => canvas.style.background = `url(${ev.target.result}) center/cover no-repeat`;
-      r.readAsDataURL(f);
-    });
-
-    fontSizeInput.addEventListener('input', e => { textEl.style.fontSize = e.target.value+'px'; fontSizeVal.textContent = e.target.value+'px'; });
-    lineHeightInput.addEventListener('input', e => { textEl.style.lineHeight = e.target.value; lineHeightVal.textContent = e.target.value; });
-    textAlignInput.addEventListener('change', e => textEl.style.textAlign = e.target.value);
-
-    overlayUpload.addEventListener('change', e => {
-      const f = e.target.files[0];
-      if (!f) return;
-      const r = new FileReader();
-      r.onload = ev => {
-        overlay.src = ev.target.result;
-        overlay.style.display = 'block';
-        overlay.style.left = overlayX+'px';
-        overlay.style.top = overlayY+'px';
-        overlay.style.width = overlaySizeInput.value+'px';
-      };
-      r.readAsDataURL(f);
-    });
-
-    overlay.addEventListener('mousedown', e => {
-      dragging = true; startX = e.clientX; startY = e.clientY; startOverlayX = overlayX; startOverlayY = overlayY;
-    });
-    document.addEventListener('mousemove', e => {
-      if (!dragging) return;
-      overlayX = startOverlayX + (e.clientX - startX);
-      overlayY = startOverlayY + (e.clientY - startY);
-      overlay.style.left = overlayX+'px';
-      overlay.style.top = overlayY+'px';
-    });
-    document.addEventListener('mouseup', () => dragging = false);
-    overlay.addEventListener('touchstart', e => {
-      dragging = true; startX = e.touches[0].clientX; startY = e.touches[0].clientY;
-      startOverlayX = overlayX; startOverlayY = overlayY;
-    });
-    document.addEventListener('touchmove', e => {
-      if (!dragging) return;
-      overlayX = startOverlayX + (e.touches[0].clientX - startX);
-      overlayY = startOverlayY + (e.touches[0].clientY - startY);
-      overlay.style.left = overlayX+'px';
-      overlay.style.top = overlayY+'px';
-    });
-    document.addEventListener('touchend', () => dragging = false);
-
-    overlaySizeInput.addEventListener('input', e => {
-      overlay.style.width = e.target.value+'px';
-      overlaySizeVal.textContent = e.target.value+'px';
-    });
-
-    fontUpload.addEventListener('change', e => {
-      const f = e.target.files[0];
-      if (!f) return;
-      const reader = new FileReader();
-      reader.onload = ev => {
-        const font = new FontFace(f.name, ev.target.result);
-        font.load().then(lf => {
-          document.fonts.add(lf);
-          textEl.style.fontFamily = f.name+', Artifakt Element, sans-serif';
+    downloadBtn.addEventListener('click', ()=> downloadMenu.style.display = downloadMenu.style.display==='flex'?'none':'flex');
+    downloadMenu.querySelectorAll('button').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const scale = parseInt(btn.dataset.scale);
+        html2canvas(canvas,{scale}).then(canvasOut=>{
+          const link=document.createElement('a');
+          link.download='text_image.png';
+          link.href=canvasOut.toDataURL();
+          link.click();
         });
-      };
-      reader.readAsArrayBuffer(f);
-    });
-
-    // Download menu
-    downloadBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      downloadMenu.style.display = downloadMenu.style.display==='flex' ? 'none' : 'flex';
-    });
-    document.addEventListener('click', e => {
-      if (!downloadWrapper.contains(e.target)) downloadMenu.style.display='none';
-    });
-    downloadMenu.querySelectorAll('button').forEach(b => {
-      b.addEventListener('click', () => {
-        const scale = parseInt(b.getAttribute('data-scale'),10);
-        const quality = b.getAttribute('data-quality');
-        downloadImage(scale, quality);
-        downloadMenu.style.display = 'none';
+        downloadMenu.style.display='none';
       });
     });
 
-    async function downloadImage(scale, quality) {
-      downloadBtn.disabled = true;
-      downloadBtn.textContent = "Processing...";
-      try {
-        const c = await html2canvas(canvas,{backgroundColor:null,scale});
-        const link = document.createElement('a');
-        link.download = `canvas-${quality}.png`;
-        link.href = c.toDataURL();
-        link.click();
-      } catch(err) {
-        console.error(err);
-      } finally {
-        downloadBtn.disabled = false;
-        downloadBtn.textContent = "Download";
-      }
-    }
-
+    // init
     updateDetectedWords();
     updateHighlightedText();
   </script>
