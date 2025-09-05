@@ -2,39 +2,143 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Standalone React App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>React App (Standalone)</title>
 
-  <!-- React + ReactDOM UMD -->
+  <!-- React + ReactDOM CDN -->
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-  <!-- Babel with React preset -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <!-- html2canvas -->
   <script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
   <!-- Inline CSS -->
   <style>
-    /* === your styles.css merged here === */
-    body { margin:0; font-family:"Artifakt Element", sans-serif; background:#ffffff; color:#000000; }
-    .app { display:flex; flex-direction:column; align-items:center; padding:20px; padding-bottom:180px; }
-    .image-canvas { width:1080px; height:1920px; display:flex; justify-content:center; align-items:center; text-align:center; background:inherit; }
-    .editable-text { max-width:80%; word-wrap:break-word; white-space:pre-wrap; }
-    .chat-input-bar { position:fixed; bottom:0; left:0; right:0; display:flex; align-items:flex-end; justify-content:space-between; background:#202123; padding:12px 16px; border-top:1px solid #444; gap:12px; }
-    .chat-textarea { flex:1; background:#2d2d2d; color:#fff; border:none; border-radius:20px; padding:12px 16px; font-size:16px; }
-    .plus-btn { background:#313233; color:#fff; border:none; border-radius:50%; width:40px; height:40px; font-size:22px; cursor:pointer; }
-    .download-btn { background:#10a37f; color:#fff; border:none; border-radius:8px; padding:10px 20px; cursor:pointer; }
-    .download-menu { position:absolute; bottom:60px; right:0; background:#2a2b2d; border-radius:8px; padding:8px; display:flex; flex-direction:column; gap:6px; }
-    @media (max-width:900px){ .image-canvas{ width:360px; height:640px; } }
+    body {
+      margin: 0;
+      font-family: "Artifakt Element", sans-serif;
+      background: #ffffff;
+      color: #000000;
+    }
+    .app {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px;
+      padding-bottom: 180px;
+    }
+    .image-canvas {
+      aspect-ratio: 9 / 16;
+      width: 100%;
+      max-width: 480px; /* limit on desktop */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      background: inherit;
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .editable-text {
+      max-width: 85%;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+    .bottom-spacer { height: 32px; }
+
+    /* Buttons */
+    .download-btn, .download-menu button, .plus-btn {
+      background: #10a37f;
+      color: white;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 15px;
+      transition: background 0.3s ease;
+    }
+    .download-btn:hover,
+    .download-menu button:hover,
+    .plus-btn:hover { background: #0d8c6b; }
+    .plus-btn {
+      border-radius: 50%;
+      width: 40px; height: 40px;
+      font-size: 20px;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: #313233;
+    }
+
+    /* Chat input bar */
+    .chat-input-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      background: #202123;
+      padding: 10px 12px;
+      border-top: 1px solid #444;
+      gap: 10px;
+      z-index: 100;
+      box-sizing: border-box;
+      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.25);
+    }
+    .chat-textarea {
+      flex: 1;
+      max-height: 120px;
+      min-height: 40px;
+      resize: none;
+      background: #2d2d2d;
+      color: #fff;
+      border: none;
+      border-radius: 16px;
+      padding: 10px 14px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    /* Popup menus */
+    .popup-dialog, .download-menu {
+      position: absolute;
+      bottom: 60px;
+      background: #2a2b2d;
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      color: white;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+      z-index: 2000;
+    }
+    .popup-dialog { left: 0; max-height: 60vh; overflow-y: auto; min-width: 240px; }
+    .download-menu { right: 0; }
+
+    .popup-dialog label, .popup-dialog strong {
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+    .popup-dialog input, .popup-dialog select {
+      margin-top: 4px;
+      width: 100%;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .chat-input-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+      }
+      .download-btn { width: 100%; }
+    }
   </style>
 </head>
 <body>
   <div id="root"></div>
 
-  <!-- React App Code -->
-  <script type="text/babel" data-presets="react">
-
-    const { useRef, useState, useEffect } = React;
+  <script type="text/babel">
+    const { useState, useRef, useEffect } = React;
 
     function App() {
       const textRef = useRef(null);
@@ -64,25 +168,137 @@
       const [overlaySize, setOverlaySize] = useState(600);
       const [dragging, setDragging] = useState(false);
 
-      // (rest of your App.js logic here unchanged: stopWords list, useEffects, helpers, JSX return...)
+      const stopWords = ["the","is","a","an","and","or","in","on","at","of","for","to","with","by","you","your","this","that","it","as","be","are","was","were","from","into","but","if","so","about","can","not","i","me","my","myself","we","our","ours","ourselves","he","him","his","himself","she","her","hers","herself","they","them","their","theirs","themselves","what","which","who","whom","these","those","am","been","being","have","has","had","having","do","does","did","doing","because","until","while","against","between","through","during","before","after","above","below","up","down","out","off","over","under","again","further","then","once","here","there","when","where","why","all","any","both","each","few","more","most","other","some","such","no","nor","only","own","same","than","too","very","s","t","will","just","don","should","now","ones","onto","others","otherwise","ought","outside","particular","particularly","placed","please","plus","no","their","then","there","yourselves","whomever","whos","whose","why"];
+
+      useEffect(() => {
+        if (!text) { setDetectedWords([]); return; }
+        const words = text.toLowerCase().replace(/[.,!?;:()"]/g, "").split(/\s+/).filter(w => w && !stopWords.includes(w));
+        const freq = {};
+        words.forEach(w => { freq[w] = (freq[w] || 0) + 1; });
+        const sorted = Object.keys(freq).sort((a,b) => freq[b]-freq[a] || b.length - a.length);
+        const topWords = sorted.slice(0,8);
+        setDetectedWords(topWords);
+        setHighlightedWords(prev => {
+          const newHighlights = {...prev};
+          topWords.forEach(w => { if (!(w in newHighlights)) newHighlights[w] = true; });
+          return newHighlights;
+        });
+      }, [text]);
+
+      const handleSelectAll = () => {
+        const words = [...detectedWords, ...customWords];
+        const newState = {};
+        words.forEach(w => { newState[w] = !allSelected ? true : false; });
+        setHighlightedWords(newState);
+        setAllSelected(!allSelected);
+      };
+
+      useEffect(() => {
+        const handler = (e) => {
+          if (menuOpen && popupRef.current && !popupRef.current.contains(e.target) && plusBtnRef.current && !plusBtnRef.current.contains(e.target)) {
+            setMenuOpen(false);
+          }
+        };
+        const escHandler = (e) => { if (e.key === "Escape") { setMenuOpen(false); setDownloadMenuOpen(false);} };
+        document.addEventListener("mousedown", handler);
+        document.addEventListener("keydown", escHandler);
+        return () => { document.removeEventListener("mousedown", handler); document.removeEventListener("keydown", escHandler); };
+      }, [menuOpen]);
+
+      useEffect(() => {
+        const handleMouseMove = (e) => { if (dragging) { setOverlayX(prev => prev + e.movementX); setOverlayY(prev => prev + e.movementY);} };
+        const handleMouseUp = () => setDragging(false);
+        window.addEventListener("mousemove", handleMouseMove);
+        window.addEventListener("mouseup", handleMouseUp);
+        return () => { window.removeEventListener("mousemove", handleMouseMove); window.removeEventListener("mouseup", handleMouseUp); };
+      }, [dragging]);
+
+      const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const getHighlightedText = (input) => {
+        if (!input) return "";
+        let result = input;
+        const allWords = [...detectedWords, ...customWords];
+        allWords.forEach(word => {
+          if (highlightedWords[word]) {
+            const regex = new RegExp(`\\b(${escapeRegex(word)})\\b`, "gi");
+            result = result.replace(regex, `<span style="font-weight:bold;">$1</span>`);
+          }
+        });
+        return result.replace(/\n/g,"<br/>");
+      };
+      const addCustomWord = (word) => {
+        if (!word) return;
+        const w = word.toLowerCase().trim();
+        if (w && !customWords.includes(w)) {
+          setCustomWords([...customWords, w]);
+          setHighlightedWords({...highlightedWords,[w]:true});
+        }
+      };
+      const downloadImage = (scale=2, quality="medium") => {
+        if (textRef.current) {
+          html2canvas(textRef.current, { scale: scale, backgroundColor: bgImage ? null : bgColor, width: 1080, height: 1920, windowWidth: 1080, windowHeight: 1920 }).then(canvas => {
+            const link = document.createElement("a");
+            link.download = `image-${quality}.png`;
+            link.href = canvas.toDataURL("image/png", 1.0);
+            link.click();
+          });
+        }
+        setDownloadMenuOpen(false);
+      };
+
+      const windowsFonts = ["Arial","Calibri","Cambria","Artifakt Element","Georgia","Segoe UI"];
+
+      const handleBgImageChange = (e) => { const file=e.target.files[0]; if (file){ const reader=new FileReader(); reader.onload=(ev)=>{ setBgImage(ev.target.result); }; reader.readAsDataURL(file);} };
+      const handleFontFileChange = (e) => { const file=e.target.files[0]; if (file){ const reader=new FileReader(); reader.onload=(ev)=>{ const fontFace=new FontFace(file.name,`url(${ev.target.result})`); fontFace.load().then((loadedFace)=>{ document.fonts.add(loadedFace); setFontFamily(`"${file.name}"`); }); }; reader.readAsDataURL(file);} };
+      const handleOverlayChange = (e) => { const file=e.target.files[0]; if (file){ const reader=new FileReader(); reader.onload=(ev)=>setOverlayImage(ev.target.result); reader.readAsDataURL(file);} };
 
       return (
         <div className="app">
-          <div ref={textRef} className="image-canvas" style={{ background: bgColor }}>
-            <div className="editable-text" style={{ color: fontColor, fontSize }}>{text}</div>
+          <div ref={textRef} className="image-canvas" style={{position:"relative", background: bgImage?`url(${bgImage}) center/cover no-repeat`:bgColor}}>
+            <div className="editable-text" style={{color:fontColor,fontSize:`${fontSize}px`,textAlign:textAlign,lineHeight:lineHeight,fontFamily:fontFamily,transform:`translateX(${textOffsetX}px)`}} dangerouslySetInnerHTML={{__html:getHighlightedText(text)}} />
+            {overlayImage && (<img src={overlayImage} alt="overlay" style={{position:"absolute",top:overlayY,left:overlayX,width:overlaySize,cursor:"move"}} draggable={false} onMouseDown={()=>setDragging(true)} />)}
           </div>
+          <div className="bottom-spacer" />
           <div className="chat-input-bar">
-            <button ref={plusBtnRef} className="plus-btn" onClick={() => setMenuOpen(s => !s)}>+</button>
-            <textarea className="chat-textarea" value={text} onChange={(e) => setText(e.target.value)} />
-            <div style={{ position: "relative" }}>
-              <button className="download-btn" onClick={() => {
-                html2canvas(textRef.current).then(canvas => {
-                  const link = document.createElement("a");
-                  link.download = "image.png";
-                  link.href = canvas.toDataURL();
-                  link.click();
-                });
-              }}>Download</button>
+            <div className="left-controls">
+              <button ref={plusBtnRef} className="plus-btn" onClick={()=>setMenuOpen(s=>!s)} aria-label="Open settings">+</button>
+              {menuOpen && (
+                <div className="popup-dialog" ref={popupRef}>
+                  <label>Font Color:<input type="color" value={fontColor} onChange={(e)=>setFontColor(e.target.value)} /></label>
+                  <label>Background:<input type="color" value={bgColor} onChange={(e)=>{setBgColor(e.target.value);setBgImage(null);}} /></label>
+                  <label>Background Image:<input type="file" accept="image/*" onChange={handleBgImageChange} /></label>
+                  <label>Text Size:<input type="range" min="20" max="100" value={fontSize} onChange={(e)=>setFontSize(Number(e.target.value))} /><div className="small-note">{fontSize}px</div></label>
+                  <label>Line Spacing:<input type="range" min="1" max="3" step="0.1" value={lineHeight} onChange={(e)=>setLineHeight(Number(e.target.value))} /><div className="small-note">{lineHeight}</div></label>
+                  <label>Alignment:<select value={textAlign} onChange={(e)=>setTextAlign(e.target.value)}><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></select></label>
+                  <label>Text Font:<select value={fontFamily} onChange={(e)=>setFontFamily(e.target.value)}>{windowsFonts.map(font=>(<option key={font} value={font}>{font}</option>))}</select></label>
+                  <label>Upload Font from Device:<input type="file" accept=".ttf,.otf,.woff,.woff2" onChange={handleFontFileChange} /></label>
+                  <label>Text X Position:<input type="range" min="-500" max="500" value={textOffsetX} onChange={(e)=>setTextOffsetX(Number(e.target.value))} /><div className="small-note">{textOffsetX}px</div></label>
+                  <label>Upload Overlay Image:<input type="file" accept="image/*" onChange={handleOverlayChange} /></label>
+                  {overlayImage && (<label>Overlay Size:<input type="range" min="50" max="1000" value={overlaySize} onChange={(e)=>setOverlaySize(Number(e.target.value))} /><div className="small-note">{overlaySize}px</div></label>)}
+                  <div className="highlight-section">
+                    <strong>Highlight Words:</strong>
+                    <div className="highlight-row"><input type="checkbox" checked={allSelected} onChange={handleSelectAll} /><label>{allSelected?"Unselect All":"Select All"}</label></div>
+                    {[...detectedWords,...customWords].map(word=>(
+                      <div key={word} className="highlight-row">
+                        <input type="checkbox" checked={!!highlightedWords[word]} onChange={()=>setHighlightedWords({...highlightedWords,[word]:!highlightedWords[word]})} />
+                        <label>{word}</label>
+                      </div>
+                    ))}
+                    <input className="add-word-input" type="text" placeholder="Add custom word and press Enter" onKeyDown={(e)=>{if(e.key==="Enter"){addCustomWord(e.target.value); e.target.value="";}}} />
+                  </div>
+                </div>
+              )}
+            </div>
+            <textarea className="chat-textarea" placeholder="Type your text here" value={text} onChange={(e)=>setText(e.target.value)} />
+            <div className="download-wrapper" style={{position:"relative"}}>
+              <button className="download-btn" onClick={()=>setDownloadMenuOpen(s=>!s)}>Download</button>
+              {downloadMenuOpen && (
+                <div className="download-menu">
+                  <button onClick={()=>downloadImage(1,"low")}>Low Quality</button>
+                  <button onClick={()=>downloadImage(2,"medium")}>Medium Quality</button>
+                  <button onClick={()=>downloadImage(4,"high")}>High Quality</button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -90,7 +306,7 @@
     }
 
     const root = ReactDOM.createRoot(document.getElementById("root"));
-    root.render(<React.StrictMode><App/></React.StrictMode>);
+    root.render(<App />);
   </script>
 </body>
 </html>
