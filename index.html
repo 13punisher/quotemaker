@@ -9,8 +9,8 @@
 
   <style>
     :root { --panel-bg: #2a2b2d; --panel-fg: #fff; --accent: #10a37f; --dark: #202123; }
-    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background: #fff; color: #000; }
-    .app { display:flex; flex-direction:column; align-items:center; padding:12px; padding-bottom:220px; }
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background: var(--dark); color: #fff; height:100vh; display:flex; flex-direction:column; }
+    .app { flex:1; display:flex; flex-direction:column; align-items:center; padding:12px; padding-top:60px; padding-bottom:220px; }
 
     /* Canvas (sharp corners) */
     .image-canvas {
@@ -20,19 +20,35 @@
       display:flex; justify-content:center; align-items:center;
       text-align:center; background:#000;
       position:relative; overflow:hidden;
-      /* no border-radius -> sharp corners */
     }
     .editable-text { max-width:85%; word-wrap:break-word; white-space:pre-wrap; color:#ececf1; font-size:15px; line-height:1.4; text-align:left; }
 
     .bottom-spacer { height:32px; }
 
-    /* Controls */
-    .download-btn, .download-menu button, .plus-btn {
-      background: var(--accent); color: #fff; padding:10px 16px; border:none; border-radius:8px;
-      cursor:pointer; font-size:15px; transition: background .2s;
+    /* Download button floating top right */
+    .download-btn {
+      position:fixed; top:12px; right:12px;
+      background: var(--accent); color:#fff; padding:10px 16px; border:none; border-radius:8px;
+      cursor:pointer; font-size:15px; transition: background .2s; z-index:1100;
     }
-    .download-btn:hover, .download-menu button:hover, .plus-btn:hover { background:#0d8c6b; }
-    .plus-btn { border-radius:50%; width:40px; height:40px; font-size:20px; display:inline-flex; align-items:center; justify-content:center; background:#313233; }
+    .download-btn:hover { background:#0d8c6b; }
+
+    .download-menu {
+      position:fixed; top:60px; right:12px;
+      background:var(--panel-bg); border-radius:8px; padding:10px;
+      display:flex; flex-direction:column; gap:10px; color:var(--panel-fg); box-shadow:0 6px 18px rgba(0,0,0,.4); z-index:2000;
+      min-width:160px;
+    }
+    .download-menu button {
+      background: var(--accent); color:#fff; padding:8px 12px; border:none; border-radius:6px;
+      cursor:pointer; font-size:14px; transition: background .2s;
+    }
+    .download-menu button:hover { background:#0d8c6b; }
+
+    .plus-btn {
+      border-radius:50%; width:40px; height:40px; font-size:20px; display:inline-flex; align-items:center; justify-content:center; background:#313233; color:#fff; border:none; cursor:pointer;
+    }
+    .plus-btn:hover { background:#444; }
 
     .chat-input-bar {
       position:fixed; bottom:0; left:0; right:0;
@@ -46,13 +62,11 @@
     }
 
     /* popup panels */
-    .popup-dialog, .download-menu {
+    .popup-dialog {
       position:absolute; bottom:60px; background:var(--panel-bg); border-radius:8px; padding:10px;
       display:flex; flex-direction:column; gap:10px; color:var(--panel-fg); box-shadow:0 6px 18px rgba(0,0,0,.4); z-index:2000;
       min-width:240px; max-height:60vh; overflow:auto;
     }
-    .popup-dialog { left:0; }
-    .download-menu { right:0; }
 
     .popup-dialog label, .popup-dialog strong { font-size:13px; margin-bottom:4px; display:flex; align-items:center; gap:8px; }
     .popup-dialog input[type="color"], .popup-dialog select, .popup-dialog input[type="file"] { margin-left:6px; flex:1; }
@@ -70,7 +84,6 @@
     /* small screens */
     @media (max-width:600px) {
       .chat-input-bar { flex-direction:column; align-items:stretch; gap:8px; }
-      .download-btn { width:100%; }
     }
   </style>
 </head>
@@ -104,7 +117,7 @@
             <label style="flex:1">Text Size:
               <input id="fontSize" type="range" min="0" max="100" value="15" />
             </label>
-            <div id="fontSizeVal" class="slider-value">45px</div>
+            <div id="fontSizeVal" class="slider-value">15px</div>
           </div>
 
           <div class="slider-row">
@@ -147,16 +160,15 @@
       </div>
 
       <textarea id="textInput" class="chat-textarea" placeholder="Type your text here"></textarea>
-
-      <div style="position:relative;">
-        <button id="downloadBtn" class="download-btn">Download</button>
-        <div id="downloadMenu" class="download-menu" style="display:none;">
-          <button data-scale="1" data-quality="low">Low Quality</button>
-          <button data-scale="2" data-quality="medium">Medium Quality</button>
-          <button data-scale="4" data-quality="high">High Quality</button>
-        </div>
-      </div>
     </div>
+  </div>
+
+  <!-- Floating Download -->
+  <button id="downloadBtn" class="download-btn">Download</button>
+  <div id="downloadMenu" class="download-menu" style="display:none;">
+    <button data-scale="1" data-quality="low">Low Quality</button>
+    <button data-scale="2" data-quality="medium">Medium Quality</button>
+    <button data-scale="4" data-quality="high">High Quality</button>
   </div>
 
   <script>
@@ -198,7 +210,7 @@
     // word highlighting state
     let detectedWords = [], customWords = [], highlightedWords = {};
 
-    // stop words (same as before)
+    // stop words
     const stopWords = ["the","is","a","an","and","or","in","on","at","of","for","to","with","by","you","your","this","that","it","as","be","are","was","were","from","into","but","if","so","about","can","not","i","me","my","myself","we","our","ours","ourselves","he","him","his","himself","she","her","hers","herself","they","them","their","theirs","themselves","what","which","who","whom","these","those","am","been","being","have","has","had","having","do","does","did","doing","because","until","while","against","between","through","during","before","after","above","below","up","down","out","off","over","under","again","further","then","once","here","there","when","where","why","all","any","both","each","few","more","most","other","some","such","no","nor","only","own","same","than","too","very"];
 
     /***********************
@@ -207,9 +219,7 @@
     function escapeRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
 
     function updateHighlightedText(){
-      // Build result by replacing highlighted words with bold spans
       let txt = textInput.value || "";
-      // ensure unique order: detected first, then custom (dedupe)
       const allOrder = Array.from(new Set([...detectedWords, ...customWords]));
       allOrder.forEach(w => {
         if (highlightedWords[w]) {
@@ -226,14 +236,12 @@
       const freq = {};
       arr.forEach(w => freq[w] = (freq[w]||0)+1);
       detectedWords = Object.keys(freq).sort((a,b)=> (freq[b]-freq[a]) || (b.length - a.length)).slice(0,8);
-      // keep previous toggles for existing words; default new ones to true
       detectedWords.forEach(w => { if (!(w in highlightedWords)) highlightedWords[w] = true; });
       renderHighlightWords();
     }
 
     function renderHighlightWords(){
       highlightContainer.innerHTML = "";
-      // combined unique list
       const all = Array.from(new Set([...detectedWords, ...customWords]));
       all.forEach((word, idx) => {
         const id = 'cb_'+idx+'_'+word.replace(/[^a-z0-9]/gi,'_')+'_'+Math.random().toString(36).slice(2,7);
@@ -247,7 +255,6 @@
         cb.addEventListener('change', () => {
           highlightedWords[word] = cb.checked;
           updateHighlightedText();
-          // update selectAll checkbox state
           selectAllCheckbox.checked = Array.from(new Set([...detectedWords, ...customWords])).every(w => highlightedWords[w]);
         });
 
@@ -260,7 +267,6 @@
         highlightContainer.appendChild(row);
       });
 
-      // update text and selectAll
       updateHighlightedText();
       selectAllCheckbox.checked = Array.from(new Set([...detectedWords, ...customWords])).every(w => highlightedWords[w]);
     }
@@ -268,42 +274,35 @@
     /***********************
       Event bindings
     ***********************/
-
-    // Text input -> update detected words + render
     textInput.addEventListener('input', () => {
       updateDetectedWords();
       updateHighlightedText();
     });
 
-    // Add custom word (Enter)
     addWordInput.addEventListener("keydown", e => {
-  if (e.key === "Enter") {
-    e.preventDefault(); // stop textarea form-like behavior
-    const w = e.target.value.toLowerCase().trim();
-    if (w && !customWords.includes(w)) {
-      customWords.push(w);
-      highlightedWords[w] = true;
-      renderHighlightWords();   // re-render checkboxes
-      updateHighlightedText();  // refresh preview
-      e.target.value = "";      // clear input
-    }
-  }
-});
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const w = e.target.value.toLowerCase().trim();
+        if (w && !customWords.includes(w)) {
+          customWords.push(w);
+          highlightedWords[w] = true;
+          renderHighlightWords();
+          updateHighlightedText();
+          e.target.value = "";
+        }
+      }
+    });
 
-
-    // Select all toggle
     selectAllCheckbox.addEventListener('change', () => {
       const all = Array.from(new Set([...detectedWords, ...customWords]));
       all.forEach(w => highlightedWords[w] = selectAllCheckbox.checked);
       renderHighlightWords();
     });
 
-    // Settings panel toggle & outside click close
     settingsBtn.addEventListener('click', () => {
       settingsPanel.style.display = settingsPanel.style.display === 'flex' ? 'none' : 'flex';
     });
 
-    // Close panels when clicking/tapping outside
     document.addEventListener('pointerdown', (e) => {
       if (settingsPanel.style.display === 'flex' && !settingsPanel.contains(e.target) && e.target !== settingsBtn) {
         settingsPanel.style.display = 'none';
@@ -317,7 +316,6 @@
       if (e.key === 'Escape') { settingsPanel.style.display='none'; downloadMenu.style.display='none'; }
     });
 
-    // Color & alignment & sliders + show values
     fontColorInput.addEventListener('input', e => textEl.style.color = e.target.value);
     bgColorInput.addEventListener('input', e => canvas.style.background = e.target.value);
 
@@ -329,12 +327,10 @@
       r.readAsDataURL(f);
     });
 
-    // sliders: font size & line spacing
     fontSizeInput.addEventListener('input', e => {
       textEl.style.fontSize = e.target.value + 'px';
       fontSizeVal.textContent = e.target.value + 'px';
     });
-    // initialize shown value
     fontSizeVal.textContent = fontSizeInput.value + 'px';
 
     lineHeightInput.addEventListener('input', e => {
@@ -345,7 +341,6 @@
 
     textAlignInput.addEventListener('change', e => textEl.style.textAlign = e.target.value);
 
-    // Overlay upload & size
     overlayUpload.addEventListener('change', e => {
       const f = e.target.files[0]; if (!f) return;
       const r = new FileReader();
@@ -365,73 +360,66 @@
     });
     overlaySizeVal.textContent = overlaySizeInput.value + 'px';
 
-    // MAKE overlay draggable on both mouse & touch via pointer events
-    overlay.addEventListener('pointerdown', (ev) => {
-      ev.preventDefault();
-      overlay.style.cursor = 'grabbing';
+    // overlay dragging
+    overlay.addEventListener('pointerdown', e => {
       dragging = true;
-      startX = ev.clientX;
-      startY = ev.clientY;
-      startOverlayX = overlayX;
-      startOverlayY = overlayY;
-      try { overlay.setPointerCapture(ev.pointerId); } catch(_) {}
+      startX = e.clientX; startY = e.clientY;
+      startOverlayX = overlayX; startOverlayY = overlayY;
+      overlay.setPointerCapture(e.pointerId);
     });
-
-    overlay.addEventListener('pointermove', (ev) => {
+    overlay.addEventListener('pointermove', e => {
       if (!dragging) return;
-      const dx = ev.clientX - startX;
-      const dy = ev.clientY - startY;
-      overlayX = startOverlayX + dx;
-      overlayY = startOverlayY + dy;
+      overlayX = startOverlayX + (e.clientX - startX);
+      overlayY = startOverlayY + (e.clientY - startY);
       overlay.style.left = overlayX + 'px';
       overlay.style.top = overlayY + 'px';
     });
-
-    overlay.addEventListener('pointerup', (ev) => {
+    overlay.addEventListener('pointerup', e => {
       dragging = false;
-      overlay.style.cursor = 'grab';
-      try { overlay.releasePointerCapture(ev.pointerId); } catch(_) {}
+      overlay.releasePointerCapture(e.pointerId);
     });
-    overlay.addEventListener('pointercancel', () => { dragging = false; overlay.style.cursor = 'grab'; });
 
-    // Font upload via FontFace API
-    fontUpload.addEventListener('change', (e) => {
+    // font upload
+    fontUpload.addEventListener('change', e => {
       const f = e.target.files[0]; if (!f) return;
-      const r = new FileReader();
-      r.onload = ev => {
-        const ff = new FontFace(f.name, `url(${ev.target.result})`);
-        ff.load().then(loaded => {
+      const name = f.name.split('.')[0];
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const font = new FontFace(name, ev.target.result);
+        font.load().then(loaded => {
           document.fonts.add(loaded);
-          // apply to preview
-          textEl.style.fontFamily = `"${f.name}", sans-serif`;
-        }).catch(err => console.error('Font load failed', err));
+          textEl.style.fontFamily = `'${name}', sans-serif`;
+        });
       };
-      r.readAsDataURL(f);
+      reader.readAsArrayBuffer(f);
     });
 
-    // Download menu toggling and capture
+    // download menu
     downloadBtn.addEventListener('click', () => {
       downloadMenu.style.display = downloadMenu.style.display === 'flex' ? 'none' : 'flex';
     });
-
-    document.querySelectorAll('#downloadMenu button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const scale = parseInt(btn.dataset.scale || '2', 10);
-        // Temporarily show textEl with exact styles and size and capture canvas
-        // html2canvas will capture the canvas element including background & overlay
-        html2canvas(canvas, { scale }).then(cnv => {
-          const a = document.createElement('a');
-          a.download = `image-${btn.dataset.quality || 'medium'}.png`;
-          a.href = cnv.toDataURL('image/png');
-          a.click();
-        }).catch(err => console.error(err));
+    downloadMenu.querySelectorAll('button').forEach(b => {
+      b.addEventListener('click', () => {
+        const scale = parseInt(b.dataset.scale);
+        const quality = b.dataset.quality;
+        downloadImage(scale, quality);
         downloadMenu.style.display = 'none';
       });
     });
 
-    // initial render state
+    // initial
     updateDetectedWords();
     updateHighlightedText();
+
+    function downloadImage(scale, quality){
+      const opts = { backgroundColor:null, scale };
+      html2canvas(canvas, opts).then(cv => {
+        const a = document.createElement('a');
+        a.download = `output_${quality}.png`;
+        a.href = cv.toDataURL("image/png");
+        a.click();
+      });
+    }
   </script>
 </body>
 </html>
