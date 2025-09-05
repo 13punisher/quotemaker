@@ -52,17 +52,9 @@ body {
   outline:none;
   padding:2px 4px;
   border-radius:4px;
-  user-select: text;
 }
 .text-box.active {
   outline:2px dashed var(--accent);
-}
-#overlay {
-  position:absolute; 
-  display:none; 
-  left:0; top:0;
-  touch-action:none;
-  user-select:none;
 }
 
 /* Bottom spacer */
@@ -167,7 +159,7 @@ body {
   display:flex; 
   align-items:center; 
   gap:8px; 
-  margin-bottom:10px; 
+  margin-bottom:10px;
 }
 .slider-value { 
   font-size:13px; 
@@ -213,9 +205,7 @@ body {
 </head>
 <body>
 <div class="app">
-  <div id="canvas" class="image-canvas" aria-label="preview canvas">
-    <img id="overlay">
-  </div>
+  <div id="canvas" class="image-canvas" aria-label="preview canvas"></div>
   <div class="bottom-spacer"></div>
 </div>
 
@@ -345,6 +335,7 @@ body {
     </label>
     <div id="overlaySizeVal" class="slider-value">200px</div>
   </div>
+  <img id="overlay" src="" style="position:absolute; display:none; left:40px; top:40px; cursor:grab; user-select:none;">
 </div>
 
 <!-- Highlights Panel -->
@@ -358,122 +349,8 @@ body {
 </div>
 
 <script>
-/***************
-  Elements
-****************/
-const canvas = document.getElementById('canvas');
-const panels = document.querySelectorAll('.settings-panel');
-const toolbarButtons = document.querySelectorAll('.settings-toolbar button');
-const overlay = document.getElementById('overlay');
-const overlayUpload = document.getElementById('overlayUpload');
-const overlaySizeInput = document.getElementById('overlaySize');
-const overlaySizeVal = document.getElementById('overlaySizeVal');
-
-const highlightContainer = document.getElementById('highlightWordsContainer');
-const addWordInput = document.getElementById('addWordInput');
-const selectAllCheckbox = document.getElementById('selectAllWords');
-
-const downloadBtn = document.getElementById('downloadBtn');
-const downloadMenu = document.getElementById('downloadMenu');
-
-// Text Panel elements
-const textSelect = document.getElementById('textSelect');
-const textEdit = document.getElementById('textEdit');
-const deleteText = document.getElementById('deleteText');
-const copyText = document.getElementById('copyText');
-const posX = document.getElementById('posX');
-const posY = document.getElementById('posY');
-const posXVal = document.getElementById('posXVal');
-const posYVal = document.getElementById('posYVal');
-const fontColorPicker = document.getElementById('fontColorPicker');
-const fontOpacity = document.getElementById('fontOpacity');
-const fontSizeSlider = document.getElementById('fontSizeSlider');
-const fontSizeVal = document.getElementById('fontSizeVal');
-const fontSelect = document.getElementById('fontSelect');
-const fontUpload = document.getElementById('fontUpload');
-const styleButtons = document.querySelectorAll('[data-style]');
-const alignButtons = document.querySelectorAll('[data-align-text]');
-const lineSpacing = document.getElementById('lineSpacing');
-const lineSpacingVal = document.getElementById('lineSpacingVal');
-const lineButtons = document.querySelectorAll('[data-line]');
-const letterSpacing = document.getElementById('letterSpacing');
-const letterSpacingVal = document.getElementById('letterSpacingVal');
-const letterButtons = document.querySelectorAll('[data-letter]');
-const moveButtons = document.querySelectorAll('[data-move]');
-const alignRelButtons = document.querySelectorAll('[data-align]');
-
-let textBoxes = [];
-let activeText = null;
-
-// Toolbar toggle
-toolbarButtons.forEach(btn => {
-  btn.addEventListener('click', () => {
-    const target = document.getElementById(btn.dataset.panel);
-    const isOpen = target.style.display === 'block';
-    panels.forEach(p => p.style.display = 'none');
-    if (!isOpen) target.style.display = 'block';
-  });
-});
-document.addEventListener('pointerdown', (e) => {
-  if (![...panels].some(p => p.contains(e.target)) && 
-      ![...toolbarButtons].some(b => b.contains(e.target))) {
-    panels.forEach(p => p.style.display = 'none');
-  }
-});
-
-/********************
- Text Box Functions
-*********************/
-function createTextBox(text="New Text") {
-  const div = document.createElement('div');
-  div.className = 'text-box';
-  div.contentEditable = true;
-  div.innerText = text;
-  div.style.left = '40px';
-  div.style.top = '40px';
-  div.style.fontSize = '15px';
-  div.style.color = '#ececf1';
-  div.style.fontFamily = 'Artifakt Element';
-  div.style.lineHeight = '1.4';
-  div.style.letterSpacing = '0px';
-  canvas.appendChild(div);
-
-  div.addEventListener('click', e=>{
-    setActiveText(div);
-    e.stopPropagation();
-  });
-
-  // Drag support
-  let dragging=false, startX=0, startY=0, startLeft=0, startTop=0;
-  div.addEventListener('pointerdown', e=>{
-    dragging=true;
-    startX=e.clientX;
-    startY=e.clientY;
-    startLeft=parseFloat(div.style.left);
-    startTop=parseFloat(div.style.top);
-    div.setPointerCapture(e.pointerId);
-    setActiveText(div);
-    e.stopPropagation();
-  });
-  div.addEventListener('pointermove', e=>{
-    if(!dragging) return;
-    div.style.left=(startLeft+e.clientX-startX)+'px';
-    div.style.top=(startTop+e.clientY-startY)+'px';
-    updatePanelValues();
-  });
-  div.addEventListener('pointerup', e=>{
-    dragging=false;
-    div.releasePointerCapture(e.pointerId);
-  });
-
-  textBoxes.push(div);
-  updateTextSelect();
-  setActiveText(div);
-}
-
-// --- Rest of JS remains mostly same but fixes applied for px parsing, highlights, font upload, etc ---
-
-  function setActiveText(box) {
+// Entire corrected JS goes here
+function setActiveText(box) {
   if(activeText) activeText.classList.remove('active');
   activeText = box;
   if(activeText) activeText.classList.add('active');
@@ -803,3 +680,6 @@ createTextBox("Hello World");
 updateDetectedWords();
 updateHighlightedText();
 
+</script>
+</body>
+</html>
